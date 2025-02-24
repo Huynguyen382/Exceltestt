@@ -44,12 +44,13 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                         $data[] = [
                             $Ma_E1,
                             date('Y-m-d', strtotime($sheet->getCell("B$row")->getValue())),
-                            (int)$sheet->getCell("F$row")->getValue(),
-                            (int)str_replace(',', '', $sheet->getCell("I$row")->getValue()),
-                            trim($sheet->getCell("L$row")->getValue()),
+                            (int)$sheet->getCell("B$row")->getValue(),
+                            (int)str_replace(',', '', $sheet->getCell("F$row")->getValue()),
                             trim($sheet->getCell("M$row")->getValue()),
+                            NULL,
+                            NULL,
                             trim($sheet->getCell("N$row")->getValue()),
-                            null
+                            null,
                         ];
                     }
                     break;
@@ -66,7 +67,8 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                             trim($sheet->getCell("L$row")->getValue()),
                             trim($sheet->getCell("M$row")->getValue()),
                             trim($sheet->getCell("N$row")->getValue()),
-                            null
+                            trim($sheet->getCell("U$row")->getValue()),
+                            trim($sheet->getCell("Q$row")->getValue())
                         ];
                     }
                     break;
@@ -82,6 +84,7 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                             (int)$sheet->getCell("B$row")->getValue(),
                             (int)str_replace(',', '', $sheet->getCell("F$row")->getValue()),
                             trim($sheet->getCell("M$row")->getValue()),
+                            null,
                             null,
                             null,
                             null
@@ -101,6 +104,7 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                             trim($sheet->getCell("N$row")->getValue()),
                             null,
                             null,
+                            null,
                             null
                         ];
                     }
@@ -108,13 +112,14 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                 case "TỔNG HỢP CÁC KHÁCH HÀNG SỬ DỤNG DỊCH VỤ ENN VÀ TMD":
                     for ($row = 2; $row <= $sheet->getHighestRow(); $row++) {
                         $Ma_E1 = trim($sheet->getCell("A$row")->getValue());
-                        // if (!preg_match('/^E.*VN$/', $Ma_E1)) continue;
+                        $Ma_E1 = preg_replace('/[^a-zA-Z0-9]/', '', $Ma_E1); // Loại bỏ ký tự ngoài số và chữ
 
                         $data[] = [
                             $Ma_E1,
                             date('Y-m-d', strtotime($sheet->getCell("E$row")->getValue())),
                             (int)$sheet->getCell("B$row")->getValue(),
                             (int)str_replace(',', '', $sheet->getCell("C$row")->getValue()),
+                            null,
                             null,
                             null,
                             null,
@@ -129,8 +134,8 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
             // Nếu có dữ liệu, thực hiện ghi hàng loạt
             if (!empty($data)) {
                 $stmt = $db->prepare("INSERT INTO ONESHIP 
-                    (Ma_E1, Ngay_Phat_Hanh, KL_Tinh_Cuoc, Cuoc_Chinh, Nguoi_Nhan, DCNhan, Dien_Thoai, Dich_Vu) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    (Ma_E1, Ngay_Phat_Hanh, KL_Tinh_Cuoc, Cuoc_Chinh, Nguoi_Nhan, DCNhan, Dien_Thoai, Dich_Vu, So_Tham_Chieu)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(Ma_E1) DO UPDATE SET 
                     Ngay_Phat_Hanh=excluded.Ngay_Phat_Hanh, 
                     KL_Tinh_Cuoc=excluded.KL_Tinh_Cuoc, 
@@ -138,7 +143,8 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                     Nguoi_Nhan=excluded.Nguoi_Nhan, 
                     DCNhan=excluded.DCNhan, 
                     Dien_Thoai=excluded.Dien_Thoai, 
-                    Dich_Vu=excluded.Dich_Vu");
+                    Dich_Vu=excluded.Dich_Vu, 
+                    So_Tham_Chieu=excluded.So_Tham_Chieu");
 
                 // Lặp qua từng dòng, bind giá trị và thực thi
                 foreach ($data as $row) {
@@ -248,7 +254,7 @@ $result = $stmt->execute();
 
             <form action="index.php" method="post" enctype="multipart/form-data">
                 <input type="file" name="file" accept=".xls,.xlsx" required class="file-input">
-                <button type="submit" name="submit" class="btn">Upload và Xử lý</button>
+                <button type="submit" name="submit" class="btn">Upload và Xử lý COD</button>
             </form>
         </div>
 
@@ -257,17 +263,21 @@ $result = $stmt->execute();
             <p class="download-link"><a href="<?php echo $file_download; ?>" download>Tải xuống file kết quả</a></p>
         <?php endif; ?>
 
-        <h2 class="table-title">Danh Sách ONESHIP</h2>
+        <h2 class="table-title">Danh Sách GOSHIP</h2>
 
-        <!-- Thanh tìm kiếm -->
-        <div class="search-container">
-            <form method="GET">
-                <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Nhập Ma_E1 hoặc Ngày Phát Hành..." class="search-input">
-                <button type="submit" class="btn">Tìm kiếm</button>
-                <?php if ($search): ?>
-                    <a href="index.php"><button type="button" class="btn cancel">Xóa tìm kiếm</button></a>
-                <?php endif; ?>
-            </form>
+        <div class="search-total-container">
+            <div class="total-count">
+                <strong>Tổng số lượng:</strong> <?= number_format($totalRows) ?>
+            </div>
+            <div class="search-container">
+                <form method="GET">
+                    <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Nhập Ma_E1 hoặc Ngày Phát Hành..." class="search-input">
+                    <button type="submit" class="btn">Tìm kiếm</button>
+                    <?php if ($search): ?>
+                        <a href="index.php"><button type="button" class="btn cancel">Xóa tìm kiếm</button></a>
+                    <?php endif; ?>
+                </form>
+            </div>
         </div>
 
         <!-- Khu vực bảng với thanh cuộn -->
@@ -284,7 +294,8 @@ $result = $stmt->execute();
                             <th>Người Nhận</th>
                             <th>Địa Chỉ Nhận</th>
                             <th>Điện Thoại</th>
-                            <th>Dịch Vụ</th>
+                            <th>Dịch vụ</th>
+                            <th>Số tham chiếu</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -302,6 +313,8 @@ $result = $stmt->execute();
                                 <td><?= htmlspecialchars($row['DCNhan']) ?></td>
                                 <td><?= htmlspecialchars($row['Dien_Thoai']) ?></td>
                                 <td><?= htmlspecialchars($row['Dich_Vu']) ?></td>
+                                <td><?= htmlspecialchars($row['So_Tham_Chieu']) ?></td>
+
                             </tr>
                         <?php endwhile; ?>
                     </tbody>
