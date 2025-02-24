@@ -1,5 +1,4 @@
 <?php
-//pass all
 require 'vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
