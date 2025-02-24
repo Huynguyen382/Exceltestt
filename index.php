@@ -37,7 +37,7 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
 
             switch ($title) {
                 case "BẢNG TỔNG HỢP NỢ CHI TIẾT":
-                    for ($row = 3; $row <= $sheet->getHighestRow(); $row++) {
+                    for ($row = 2; $row <= $sheet->getHighestRow(); $row++) {
                         $Ma_E1 = trim($sheet->getCell("A$row")->getValue());
                         if (!preg_match('/^E.*VN$/', $Ma_E1)) continue;
 
@@ -55,7 +55,7 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                     break;
 
                 case "TỔNG HỢP SẢN LƯỢNG KHÁCH HÀNG TẠI ĐƠN VỊ":
-                    for ($row = 3; $row <= $sheet->getHighestRow(); $row++) {
+                    for ($row = 2; $row <= $sheet->getHighestRow(); $row++) {
                         $Ma_E1 = trim($sheet->getCell("A$row")->getValue());
                         if (!preg_match('/^E.*VN$/', $Ma_E1)) continue;
 
@@ -72,7 +72,7 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                     }
                     break;
                 case "TỔNG HỢP CHUYỂN HOÀN THEO NGÀY":
-                    for ($row = 3; $row <= $sheet->getHighestRow(); $row++) {
+                    for ($row = 2; $row <= $sheet->getHighestRow(); $row++) {
                         $Ma_E1 = trim($sheet->getCell("A$row")->getValue());
                         if (!preg_match('/^E.*VN$/', $Ma_E1)) continue;
 
@@ -89,7 +89,7 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                     }
                     break;
                 case "TỔNG HỢP CÁC KHÁCH HÀNG SỬ DỤNG DỊCH VỤ ENN VÀ TMD":
-                    for ($row = 3; $row <= $sheet->getHighestRow(); $row++) {
+                    for ($row = 2; $row <= $sheet->getHighestRow(); $row++) {
                         $Ma_E1 = trim($sheet->getCell("A$row")->getValue());
                         // if (!preg_match('/^E.*VN$/', $Ma_E1)) continue;
 
