@@ -36,6 +36,23 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
             $data = [];
 
             switch ($title) {
+                case "Mã E1":
+                    for ($row = 2; $row <= $sheet->getHighestRow(); $row++) {
+                        $Ma_E1 = trim($sheet->getCell("A$row")->getValue());
+                        if (!preg_match('/^E.*VN$/', $Ma_E1)) continue;
+
+                        $data[] = [
+                            $Ma_E1,
+                            date('Y-m-d', strtotime($sheet->getCell("B$row")->getValue())),
+                            (int)$sheet->getCell("F$row")->getValue(),
+                            (int)str_replace(',', '', $sheet->getCell("I$row")->getValue()),
+                            trim($sheet->getCell("L$row")->getValue()),
+                            trim($sheet->getCell("M$row")->getValue()),
+                            trim($sheet->getCell("N$row")->getValue()),
+                            null
+                        ];
+                    }
+                    break;
                 case "BẢNG TỔNG HỢP NỢ CHI TIẾT":
                     for ($row = 2; $row <= $sheet->getHighestRow(); $row++) {
                         $Ma_E1 = trim($sheet->getCell("A$row")->getValue());
