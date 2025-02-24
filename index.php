@@ -6,8 +6,8 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
-ini_set('max_execution_time', 600); 
-ini_set('memory_limit', '512M'); 
+ini_set('max_execution_time', 600);
+ini_set('memory_limit', '512M');
 ini_set('max_file_uploads', 100);
 ini_set('upload_max_filesize', '200M');
 ini_set('post_max_size', '500M');
@@ -71,7 +71,40 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                         ];
                     }
                     break;
+                case "TỔNG HỢP CHUYỂN HOÀN THEO NGÀY":
+                    for ($row = 3; $row <= $sheet->getHighestRow(); $row++) {
+                        $Ma_E1 = trim($sheet->getCell("A$row")->getValue());
+                        if (!preg_match('/^E.*VN$/', $Ma_E1)) continue;
 
+                        $data[] = [
+                            $Ma_E1,
+                            date('Y-m-d', strtotime($sheet->getCell("L$row")->getValue())),
+                            null,
+                            (int)str_replace(',', '', $sheet->getCell("E$row")->getValue()),
+                            trim($sheet->getCell("N$row")->getValue()),
+                            null,
+                            null,
+                            null
+                        ];
+                    }
+                    break;
+                case "TỔNG HỢP CÁC KHÁCH HÀNG SỬ DỤNG DỊCH VỤ ENN VÀ TMD":
+                    for ($row = 3; $row <= $sheet->getHighestRow(); $row++) {
+                        $Ma_E1 = trim($sheet->getCell("A$row")->getValue());
+                        // if (!preg_match('/^E.*VN$/', $Ma_E1)) continue;
+
+                        $data[] = [
+                            $Ma_E1,
+                            date('Y-m-d', strtotime($sheet->getCell("E$row")->getValue())),
+                            (int)$sheet->getCell("B$row")->getValue(),
+                            (int)str_replace(',', '', $sheet->getCell("C$row")->getValue()),
+                            null,
+                            null,
+                            null,
+                            null
+                        ];
+                    }
+                    break;
                 default:
                     die("Tiêu đề bảng không hợp lệ trong file: " . $_FILES['excelFiles']['name'][$index]);
             }
@@ -121,7 +154,7 @@ if (isset($_POST['submit']) && isset($_FILES['file']) && $_FILES['file']['error'
     $highestRow = $worksheet->getHighestRow();
     $highestColumnIndex = Coordinate::columnIndexFromString($worksheet->getHighestColumn());
 
-    $colCuocChinh = Coordinate::stringFromColumnIndex($highestColumnIndex -2);
+    $colCuocChinh = Coordinate::stringFromColumnIndex($highestColumnIndex - 2);
     $worksheet->setCellValue($colCuocChinh . '1', "Cuoc_Chinh");
 
     for ($row = 2; $row <= $highestRow; $row++) {
@@ -215,7 +248,7 @@ $result = $stmt->execute();
                 <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Nhập Ma_E1 hoặc Ngày Phát Hành..." class="search-input">
                 <button type="submit" class="btn">Tìm kiếm</button>
                 <?php if ($search): ?>
-                    <a href="Test2.php"><button type="button" class="btn cancel">Xóa tìm kiếm</button></a>
+                    <a href="index.php"><button type="button" class="btn cancel">Xóa tìm kiếm</button></a>
                 <?php endif; ?>
             </form>
         </div>
