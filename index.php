@@ -26,7 +26,7 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
 
     if (!empty($_FILES['excelFiles']['tmp_name']) && is_array($_FILES['excelFiles']['tmp_name'])) {
         $db->exec("BEGIN TRANSACTION;");
-
+        $total_imported = 0;
         foreach ($_FILES['excelFiles']['tmp_name'] as $index => $file) {
             $reader = IOFactory::createReaderForFile($file);
             $reader->setReadDataOnly(true);
@@ -158,12 +158,13 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                     }
                     $stmt->execute();
                 }
+                $total_imported += count($data); 
             }
         }
         $db->exec("COMMIT;");
         echo "<script>
             setTimeout(function() {
-                alert('Nhập dữ liệu thành công!');
+                alert('Nhập dữ liệu thành công! Tổng số bản ghi đã nhập: " . $total_imported . "');
             }, 500);
         </script>";
     }
@@ -256,7 +257,7 @@ $result = $stmt->execute();
         <div class="upload-section">
             <form action="index.php" method="post" enctype="multipart/form-data">
                 <input type="file" name="excelFiles[]" multiple class="file-input">
-                <button type="submit" name="submit" class="btn">Import Data</button>
+                <button type="submit" name="submit" class="btn">Nhập phí</button>
             </form>
 
             <form action="index.php" method="post" enctype="multipart/form-data">
