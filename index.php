@@ -164,13 +164,11 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
         $db->exec("COMMIT;");
         echo "<script>
             setTimeout(function() {
-                alert('Nhập dữ liệu thành công! Tổng số bản ghi đã nhập: " . $total_imported . "');
+                alert('Nhập dữ liệu thành công! Tổng số bản ghi đã nh: " . $total_imported . "');
             }, 500);
         </script>";
     }
 }
-
-
 
 $file_download = "";
 
@@ -183,9 +181,7 @@ if (isset($_POST['submit']) && isset($_FILES['file']) && $_FILES['file']['error'
     $spreadsheet = IOFactory::load($file_tmp_path);
     $worksheet = $spreadsheet->getActiveSheet();
     $highestRow = $worksheet->getHighestRow();
-    $highestColumnIndex = Coordinate::columnIndexFromString($worksheet->getHighestColumn());
-
-    $colCuocChinh = Coordinate::stringFromColumnIndex($highestColumnIndex - 2);
+    $colCuocChinh = 'K';
     $worksheet->setCellValue($colCuocChinh . '1', "Cuoc_Chinh");
 
     for ($row = 2; $row <= $highestRow; $row++) {
@@ -200,11 +196,12 @@ if (isset($_POST['submit']) && isset($_FILES['file']) && $_FILES['file']['error'
             }
         }
     }
-
+    
     $writer = new Xlsx($spreadsheet);
     $writer->save($output_file);
     $file_download = $output_file;
 }
+
 // Xác định số dòng mỗi trang
 $limit = 1000;
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
