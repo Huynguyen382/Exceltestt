@@ -49,8 +49,8 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                             trim($sheet->getCell("M$row")->getValue()),
                             NULL,
                             NULL,
-                            trim($sheet->getCell("N$row")->getValue()),
                             null,
+                            trim($sheet->getCell("N$row")->getValue())
                         ];
                     }
                     break;
@@ -87,7 +87,7 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                             null,
                             null,
                             null,
-                            null
+                            trim($sheet->getCell("N$row")->getValue())
                         ];
                     }
                     break;
@@ -105,7 +105,7 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                             null,
                             null,
                             null,
-                            null
+                            trim($sheet->getCell("O$row")->getValue())
                         ];
                     }
                     break;
@@ -113,7 +113,7 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                     for ($row = 2; $row <= $sheet->getHighestRow(); $row++) {
                         $Ma_E1 = trim($sheet->getCell("A$row")->getValue());
                         $Ma_E1 = preg_replace('/[^a-zA-Z0-9]/', '', $Ma_E1); // Loại bỏ ký tự ngoài số và chữ
-
+                        if (!preg_match('/^E.*VN$/', $Ma_E1)) continue;
                         $data[] = [
                             $Ma_E1,
                             date('Y-m-d', strtotime($sheet->getCell("E$row")->getValue())),
@@ -128,7 +128,11 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                     }
                     break;
                 default:
-                    die("Tiêu đề bảng không hợp lệ trong file: " . $_FILES['excelFiles']['name'][$index]);
+                    echo "<script>
+                setTimeout(function() {
+                    alert('Tiêu đề bảng không hợp lệ trong file: " . $_FILES['excelFiles']['name'][$index] . "');
+                }, 500);
+            </script>";
             }
 
             // Nếu có dữ liệu, thực hiện ghi hàng loạt
@@ -156,9 +160,12 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                 }
             }
         }
-
         $db->exec("COMMIT;");
-        echo "Nhập dữ liệu thành công!";
+        echo "<script>
+            setTimeout(function() {
+                alert('Nhập dữ liệu thành công!');
+            }, 500);
+        </script>";
     }
 }
 
