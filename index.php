@@ -135,7 +135,6 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
             </script>";
             }
 
-            // Nếu có dữ liệu, thực hiện ghi hàng loạt
             if (!empty($data)) {
                 $stmt = $db->prepare("INSERT INTO ONESHIP 
                     (Ma_E1, Ngay_Phat_Hanh, KL_Tinh_Cuoc, Cuoc_Chinh, Nguoi_Nhan, DCNhan, Dien_Thoai, Dich_Vu, So_Tham_Chieu)
@@ -150,7 +149,7 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                     Dich_Vu=excluded.Dich_Vu, 
                     So_Tham_Chieu=excluded.So_Tham_Chieu");
 
-                // Lặp qua từng dòng, bind giá trị và thực thi
+                
                 foreach ($data as $row) {
                     $stmt->reset();
                     for ($i = 0; $i < count($row); $i++) {
@@ -202,15 +201,14 @@ if (isset($_POST['submit']) && isset($_FILES['file']) && $_FILES['file']['error'
     $file_download = $output_file;
 }
 
-// Xác định số dòng mỗi trang
+
 $limit = 1000;
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $limit;
 
-// Lấy từ khóa tìm kiếm (nếu có)
+
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-// Truy vấn dữ liệu có tìm kiếm
 $whereClause = "";
 $params = [];
 if ($search) {
@@ -218,7 +216,7 @@ if ($search) {
     $params[':search'] = "%$search%";
 }
 
-// Đếm tổng số dòng để phân trang
+
 $queryCount = "SELECT COUNT(*) FROM ONESHIP $whereClause";
 $stmt = $db->prepare($queryCount);
 foreach ($params as $key => $value) {
@@ -227,7 +225,7 @@ foreach ($params as $key => $value) {
 $totalRows = $stmt->execute()->fetchArray()[0];
 $totalPages = ceil($totalRows / $limit);
 
-// Truy vấn dữ liệu có giới hạn phân trang
+
 $query = "SELECT * FROM ONESHIP $whereClause ORDER BY Ngay_Phat_Hanh DESC LIMIT $limit OFFSET $offset";
 $stmt = $db->prepare($query);
 foreach ($params as $key => $value) {
@@ -250,7 +248,6 @@ $result = $stmt->execute();
 <body>
 
     <div class="container">
-        <!-- Khu vực upload -->
         <div class="upload-section">
             <form action="index.php" method="post" enctype="multipart/form-data">
                 <input type="file" name="excelFiles[]" multiple class="file-input">
@@ -262,8 +259,6 @@ $result = $stmt->execute();
                 <button type="submit" name="submit" class="btn">Upload và Xử lý COD</button>
             </form>
         </div>
-
-        <!-- Hiển thị file tải về -->
         <?php if (!empty($file_download)) : ?>
             <p class="download-link"><a href="<?php echo $file_download; ?>" download>Tải xuống file kết quả</a></p>
         <?php endif; ?>
@@ -284,8 +279,6 @@ $result = $stmt->execute();
                 </form>
             </div>
         </div>
-
-        <!-- Khu vực bảng với thanh cuộn -->
         <div class="table-container">
             <?php if ($totalRows > 0): ?>
                 <table class="styled-table">
@@ -305,7 +298,7 @@ $result = $stmt->execute();
                     </thead>
                     <tbody>
                         <?php
-                        $i = ($page - 1) * $limit + 1; // Tính số thứ tự theo trang
+                        $i = ($page - 1) * $limit + 1; 
                         while ($row = $result->fetchArray(SQLITE3_ASSOC)):
                         ?>
                             <tr>
@@ -328,8 +321,6 @@ $result = $stmt->execute();
                 <p class="no-data">Không tìm thấy kết quả!</p>
             <?php endif; ?>
         </div>
-
-        <!-- Phân trang -->
         <div class="pagination">
             <?php if ($page > 1): ?>
                 <a href="?search=<?= urlencode($search) ?>&page=<?= $page - 1 ?>" class="btn">&lt; Prev</a>
