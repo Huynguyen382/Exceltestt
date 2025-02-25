@@ -180,7 +180,7 @@ if (isset($_POST['submit']) && isset($_FILES['file']) && $_FILES['file']['error'
     $spreadsheet = IOFactory::load($file_tmp_path);
     $worksheet = $spreadsheet->getActiveSheet();
     $highestRow = $worksheet->getHighestRow();
-    $colCuocChinh = 'K';
+    $colCuocChinh = 'J';
     $worksheet->setCellValue($colCuocChinh . '1', "Cuoc_Chinh");
 
     for ($row = 2; $row <= $highestRow; $row++) {
@@ -321,6 +321,7 @@ $result = $stmt->execute();
                 <p class="no-data">Không tìm thấy kết quả!</p>
             <?php endif; ?>
         </div>
+
         <div class="pagination">
             <?php if ($page > 1): ?>
                 <a href="?search=<?= urlencode($search) ?>&page=<?= $page - 1 ?>" class="btn">&lt; Prev</a>
