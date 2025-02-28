@@ -1,7 +1,7 @@
 /uploads
-!/uploads/gitkeep
+!/uploads/.gitkeep
 
 /Database
-!/Database/gitkeep
+!/Database/.gitkeep
 
 /vendor
