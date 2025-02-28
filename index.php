@@ -6,8 +6,8 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
-ini_set('max_execution_time', 600); 
-ini_set('memory_limit', '512M'); 
+ini_set('max_execution_time', 600);
+ini_set('memory_limit', '512M');
 ini_set('max_file_uploads', 100);
 ini_set('upload_max_filesize', '200M');
 ini_set('post_max_size', '500M');
@@ -26,7 +26,7 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
 
     if (!empty($_FILES['excelFiles']['tmp_name']) && is_array($_FILES['excelFiles']['tmp_name'])) {
         $db->exec("BEGIN TRANSACTION;");
-
+        $total_imported = 0;
         foreach ($_FILES['excelFiles']['tmp_name'] as $index => $file) {
             $reader = IOFactory::createReaderForFile($file);
             $reader->setReadDataOnly(true);
@@ -36,8 +36,26 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
             $data = [];
 
             switch ($title) {
+                case "Mã E1":
+                    for ($row = 2; $row <= $sheet->getHighestRow(); $row++) {
+                        $Ma_E1 = trim($sheet->getCell("A$row")->getValue());
+                        if (!preg_match('/^E.*VN$/', $Ma_E1)) continue;
+
+                        $data[] = [
+                            $Ma_E1,
+                            date('Y-m-d', strtotime($sheet->getCell("B$row")->getValue())),
+                            (int)$sheet->getCell("B$row")->getValue(),
+                            (int)str_replace(',', '', $sheet->getCell("F$row")->getValue()),
+                            trim($sheet->getCell("M$row")->getValue()),
+                            NULL,
+                            NULL,
+                            null,
+                            trim($sheet->getCell("N$row")->getValue())
+                        ];
+                    }
+                    break;
                 case "BẢNG TỔNG HỢP NỢ CHI TIẾT":
-                    for ($row = 3; $row <= $sheet->getHighestRow(); $row++) {
+                    for ($row = 2; $row <= $sheet->getHighestRow(); $row++) {
                         $Ma_E1 = trim($sheet->getCell("A$row")->getValue());
                         if (!preg_match('/^E.*VN$/', $Ma_E1)) continue;
 
@@ -49,13 +67,14 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                             trim($sheet->getCell("L$row")->getValue()),
                             trim($sheet->getCell("M$row")->getValue()),
                             trim($sheet->getCell("N$row")->getValue()),
-                            null
+                            trim($sheet->getCell("U$row")->getValue()),
+                            trim($sheet->getCell("Q$row")->getValue())
                         ];
                     }
                     break;
 
                 case "TỔNG HỢP SẢN LƯỢNG KHÁCH HÀNG TẠI ĐƠN VỊ":
-                    for ($row = 3; $row <= $sheet->getHighestRow(); $row++) {
+                    for ($row = 2; $row <= $sheet->getHighestRow(); $row++) {
                         $Ma_E1 = trim($sheet->getCell("A$row")->getValue());
                         if (!preg_match('/^E.*VN$/', $Ma_E1)) continue;
 
@@ -67,20 +86,59 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                             trim($sheet->getCell("M$row")->getValue()),
                             null,
                             null,
+                            null,
+                            trim($sheet->getCell("N$row")->getValue())
+                        ];
+                    }
+                    break;
+                case "TỔNG HỢP CHUYỂN HOÀN THEO NGÀY":
+                    for ($row = 2; $row <= $sheet->getHighestRow(); $row++) {
+                        $Ma_E1 = trim($sheet->getCell("A$row")->getValue());
+                        if (!preg_match('/^E.*VN$/', $Ma_E1)) continue;
+
+                        $data[] = [
+                            $Ma_E1,
+                            date('Y-m-d', strtotime($sheet->getCell("L$row")->getValue())),
+                            null,
+                            (int)str_replace(',', '', $sheet->getCell("E$row")->getValue()),
+                            trim($sheet->getCell("N$row")->getValue()),
+                            null,
+                            null,
+                            null,
+                            trim($sheet->getCell("O$row")->getValue())
+                        ];
+                    }
+                    break;
+                case "TỔNG HỢP CÁC KHÁCH HÀNG SỬ DỤNG DỊCH VỤ ENN VÀ TMD":
+                    for ($row = 2; $row <= $sheet->getHighestRow(); $row++) {
+                        $Ma_E1 = trim($sheet->getCell("A$row")->getValue());
+                        $Ma_E1 = preg_replace('/[^a-zA-Z0-9]/', '', $Ma_E1); // Loại bỏ ký tự ngoài số và chữ
+                        if (!preg_match('/^E.*VN$/', $Ma_E1)) continue;
+                        $data[] = [
+                            $Ma_E1,
+                            date('Y-m-d', strtotime($sheet->getCell("E$row")->getValue())),
+                            (int)$sheet->getCell("B$row")->getValue(),
+                            (int)str_replace(',', '', $sheet->getCell("C$row")->getValue()),
+                            null,
+                            null,
+                            null,
+                            null,
                             null
                         ];
                     }
                     break;
-
                 default:
-                    die("Tiêu đề bảng không hợp lệ trong file: " . $_FILES['excelFiles']['name'][$index]);
+                    echo "<script>
+                setTimeout(function() {
+                    alert('Tiêu đề bảng không hợp lệ trong file: " . $_FILES['excelFiles']['name'][$index] . "');
+                }, 500);
+            </script>";
             }
 
-            // Nếu có dữ liệu, thực hiện ghi hàng loạt
             if (!empty($data)) {
                 $stmt = $db->prepare("INSERT INTO ONESHIP 
-                    (Ma_E1, Ngay_Phat_Hanh, KL_Tinh_Cuoc, Cuoc_Chinh, Nguoi_Nhan, DCNhan, Dien_Thoai, Dich_Vu) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    (Ma_E1, Ngay_Phat_Hanh, KL_Tinh_Cuoc, Cuoc_Chinh, Nguoi_Nhan, DCNhan, Dien_Thoai, Dich_Vu, So_Tham_Chieu)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(Ma_E1) DO UPDATE SET 
                     Ngay_Phat_Hanh=excluded.Ngay_Phat_Hanh, 
                     KL_Tinh_Cuoc=excluded.KL_Tinh_Cuoc, 
@@ -88,9 +146,10 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                     Nguoi_Nhan=excluded.Nguoi_Nhan, 
                     DCNhan=excluded.DCNhan, 
                     Dien_Thoai=excluded.Dien_Thoai, 
-                    Dich_Vu=excluded.Dich_Vu");
+                    Dich_Vu=excluded.Dich_Vu, 
+                    So_Tham_Chieu=excluded.So_Tham_Chieu");
 
-                // Lặp qua từng dòng, bind giá trị và thực thi
+                
                 foreach ($data as $row) {
                     $stmt->reset();
                     for ($i = 0; $i < count($row); $i++) {
@@ -98,15 +157,17 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                     }
                     $stmt->execute();
                 }
+                $total_imported += count($data); 
             }
         }
-
         $db->exec("COMMIT;");
-        echo "Nhập dữ liệu thành công!";
+        echo "<script>
+            setTimeout(function() {
+                alert('Nhập dữ liệu thành công! Tổng số bản ghi đã nh: " . $total_imported . "');
+            }, 500);
+        </script>";
     }
 }
-
-
 
 $file_download = "";
 
@@ -119,9 +180,7 @@ if (isset($_POST['submit']) && isset($_FILES['file']) && $_FILES['file']['error'
     $spreadsheet = IOFactory::load($file_tmp_path);
     $worksheet = $spreadsheet->getActiveSheet();
     $highestRow = $worksheet->getHighestRow();
-    $highestColumnIndex = Coordinate::columnIndexFromString($worksheet->getHighestColumn());
-
-    $colCuocChinh = Coordinate::stringFromColumnIndex($highestColumnIndex -2);
+    $colCuocChinh = 'J';
     $worksheet->setCellValue($colCuocChinh . '1', "Cuoc_Chinh");
 
     for ($row = 2; $row <= $highestRow; $row++) {
@@ -136,20 +195,20 @@ if (isset($_POST['submit']) && isset($_FILES['file']) && $_FILES['file']['error'
             }
         }
     }
-
+    
     $writer = new Xlsx($spreadsheet);
     $writer->save($output_file);
     $file_download = $output_file;
 }
-// Xác định số dòng mỗi trang
+
+
 $limit = 1000;
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $limit;
 
-// Lấy từ khóa tìm kiếm (nếu có)
+
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-// Truy vấn dữ liệu có tìm kiếm
 $whereClause = "";
 $params = [];
 if ($search) {
@@ -157,7 +216,7 @@ if ($search) {
     $params[':search'] = "%$search%";
 }
 
-// Đếm tổng số dòng để phân trang
+
 $queryCount = "SELECT COUNT(*) FROM ONESHIP $whereClause";
 $stmt = $db->prepare($queryCount);
 foreach ($params as $key => $value) {
@@ -166,7 +225,7 @@ foreach ($params as $key => $value) {
 $totalRows = $stmt->execute()->fetchArray()[0];
 $totalPages = ceil($totalRows / $limit);
 
-// Truy vấn dữ liệu có giới hạn phân trang
+
 $query = "SELECT * FROM ONESHIP $whereClause ORDER BY Ngay_Phat_Hanh DESC LIMIT $limit OFFSET $offset";
 $stmt = $db->prepare($query);
 foreach ($params as $key => $value) {
@@ -189,38 +248,37 @@ $result = $stmt->execute();
 <body>
 
     <div class="container">
-        <!-- Khu vực upload -->
         <div class="upload-section">
             <form action="index.php" method="post" enctype="multipart/form-data">
                 <input type="file" name="excelFiles[]" multiple class="file-input">
-                <button type="submit" name="submit" class="btn">Import Data</button>
+                <button type="submit" name="submit" class="btn">Nhập phí</button>
             </form>
 
             <form action="index.php" method="post" enctype="multipart/form-data">
                 <input type="file" name="file" accept=".xls,.xlsx" required class="file-input">
-                <button type="submit" name="submit" class="btn">Upload và Xử lý</button>
+                <button type="submit" name="submit" class="btn">Upload và Xử lý COD</button>
             </form>
         </div>
-
-        <!-- Hiển thị file tải về -->
         <?php if (!empty($file_download)) : ?>
             <p class="download-link"><a href="<?php echo $file_download; ?>" download>Tải xuống file kết quả</a></p>
         <?php endif; ?>
 
-        <h2 class="table-title">Danh Sách ONESHIP</h2>
+        <h2 class="table-title">Danh Sách GOSHIP</h2>
 
-        <!-- Thanh tìm kiếm -->
-        <div class="search-container">
-            <form method="GET">
-                <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Nhập Ma_E1 hoặc Ngày Phát Hành..." class="search-input">
-                <button type="submit" class="btn">Tìm kiếm</button>
-                <?php if ($search): ?>
-                    <a href="Test2.php"><button type="button" class="btn cancel">Xóa tìm kiếm</button></a>
-                <?php endif; ?>
-            </form>
+        <div class="search-total-container">
+            <div class="total-count">
+                <strong>Tổng số lượng:</strong> <?= number_format($totalRows) ?>
+            </div>
+            <div class="search-container">
+                <form method="GET">
+                    <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Nhập Ma_E1 hoặc Ngày Phát Hành..." class="search-input">
+                    <button type="submit" class="btn">Tìm kiếm</button>
+                    <?php if ($search): ?>
+                        <a href="index.php"><button type="button" class="btn cancel">Xóa tìm kiếm</button></a>
+                    <?php endif; ?>
+                </form>
+            </div>
         </div>
-
-        <!-- Khu vực bảng với thanh cuộn -->
         <div class="table-container">
             <?php if ($totalRows > 0): ?>
                 <table class="styled-table">
@@ -234,12 +292,13 @@ $result = $stmt->execute();
                             <th>Người Nhận</th>
                             <th>Địa Chỉ Nhận</th>
                             <th>Điện Thoại</th>
-                            <th>Dịch Vụ</th>
+                            <th>Dịch vụ</th>
+                            <th>Số tham chiếu</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php
-                        $i = ($page - 1) * $limit + 1; // Tính số thứ tự theo trang
+                        $i = ($page - 1) * $limit + 1; 
                         while ($row = $result->fetchArray(SQLITE3_ASSOC)):
                         ?>
                             <tr>
@@ -252,6 +311,8 @@ $result = $stmt->execute();
                                 <td><?= htmlspecialchars($row['DCNhan']) ?></td>
                                 <td><?= htmlspecialchars($row['Dien_Thoai']) ?></td>
                                 <td><?= htmlspecialchars($row['Dich_Vu']) ?></td>
+                                <td><?= htmlspecialchars($row['So_Tham_Chieu']) ?></td>
+
                             </tr>
                         <?php endwhile; ?>
                     </tbody>
@@ -261,7 +322,6 @@ $result = $stmt->execute();
             <?php endif; ?>
         </div>
 
-        <!-- Phân trang -->
         <div class="pagination">
             <?php if ($page > 1): ?>
                 <a href="?search=<?= urlencode($search) ?>&page=<?= $page - 1 ?>" class="btn">&lt; Prev</a>

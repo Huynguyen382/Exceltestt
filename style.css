@@ -15,7 +15,7 @@ body {
 
 /* Container chính */
 .container {
-    max-width: 1200px;
+    max-width: 1600px;
     margin: auto;
     background: white;
     padding: 20px;
@@ -81,9 +81,24 @@ body {
     color: #333;
 }
 
-/* Tìm kiếm */
-.search-container {
+/* Tìm kiếm và Tổng số lượng */
+.search-total-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 10px;
+    width: 100%;
+}
+
+.total-count {
+    font-weight: bold;
+    text-align: left;
+    flex: 1;
+}
+
+.search-container {
+    display: flex;
+    align-items: center;
 }
 
 .search-input {
@@ -100,12 +115,12 @@ body {
     border-radius: 10px;
     margin-top: 10px;
 }
+
 th:first-child, td:first-child {
     text-align: center;
     font-weight: bold;
     width: 50px; /* Cột STT nhỏ gọn */
 }
-
 
 /* Bảng */
 .styled-table {
@@ -163,4 +178,11 @@ tr:hover {
 .no-data {
     color: red;
     font-weight: bold;
+}
+.styled-table thead {
+    position: sticky;
+    top: 0;
+    background-color: #fff; 
+    z-index: 1000;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
 }
