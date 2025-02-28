@@ -149,7 +149,7 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                     Dich_Vu=excluded.Dich_Vu, 
                     So_Tham_Chieu=excluded.So_Tham_Chieu");
 
-                
+
                 foreach ($data as $row) {
                     $stmt->reset();
                     for ($i = 0; $i < count($row); $i++) {
@@ -157,15 +157,23 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                     }
                     $stmt->execute();
                 }
-                $total_imported += count($data); 
+                $total_imported += count($data);
             }
         }
         $db->exec("COMMIT;");
-        echo "<script>
-            setTimeout(function() {
-                alert('Nhập dữ liệu thành công! Tổng số bản ghi đã nh: " . $total_imported . "');
-            }, 500);
-        </script>";
+        if ($total_imported > 0) {
+            echo "<script>
+                setTimeout(function() {
+                    alert('Nhập dữ liệu thành công! Tổng số bản ghi đã nhập: " . $total_imported . "');
+                }, 500);
+            </script>";
+        } else {
+            echo "<script>
+                setTimeout(function() {
+                    alert('Nhập dữ liệu thất bại! Không có bản ghi nào được nhập.');
+                }, 500);
+            </script>";
+        }
     }
 }
 
@@ -195,10 +203,14 @@ if (isset($_POST['submit']) && isset($_FILES['file']) && $_FILES['file']['error'
             }
         }
     }
-    
+
     $writer = new Xlsx($spreadsheet);
     $writer->save($output_file);
     $file_download = $output_file;
+    if ($file_download) {
+        echo "<script>alert('Xử lý thành công! Bạn có thể tải file kết quả.');</script>";
+    }
+    
 }
 
 
@@ -243,22 +255,44 @@ $result = $stmt->execute();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload Excel</title>
     <link rel="stylesheet" type="text/css" href="style.css">
+    <script>
+        function validateFileInput(event, inputId, tooltipId) {
+            let fileInput = document.getElementById(inputId);
+            let tooltip = document.getElementById(tooltipId);
+
+            if (fileInput.files.length === 0) {
+                tooltip.classList.add("show-tooltip"); // Hiển thị tooltip nếu chưa chọn file
+                event.preventDefault();
+                return false;
+            } else {
+                tooltip.classList.remove("show-tooltip"); // Ẩn tooltip khi đã chọn file
+                return true;
+            }
+        }
+    </script>
 </head>
 
 <body>
 
     <div class="container">
         <div class="upload-section">
-            <form action="index.php" method="post" enctype="multipart/form-data">
-                <input type="file" name="excelFiles[]" multiple class="file-input">
-                <button type="submit" name="submit" class="btn">Nhập phí</button>
+            <form action="index.php" method="post" enctype="multipart/form-data" class="upload-form">
+                <div class="upload-group">
+                    <input type="file" name="excelFiles[]" multiple class="file-input" id="fileInput1">
+                    <span class="tooltip" id="tooltip1">Please select a file</span>
+                </div>
+                <button type="submit" name="submit" class="btn" onclick="return validateFileInput(event, 'fileInput1', 'tooltip1')">Nhập phí</button>
             </form>
 
-            <form action="index.php" method="post" enctype="multipart/form-data">
-                <input type="file" name="file" accept=".xls,.xlsx" required class="file-input">
-                <button type="submit" name="submit" class="btn">Upload và Xử lý COD</button>
+            <form action="index.php" method="post" enctype="multipart/form-data" class="upload-form">
+                <div class="upload-group">
+                    <input type="file" name="file" accept=".xls,.xlsx" required class="file-input" id="fileInput2">
+                    <span class="tooltip" id="tooltip2">Please select a file</span>
+                </div>
+                <button type="submit" name="submit" class="btn" onclick="return validateFileInput(event, 'fileInput2', 'tooltip2')">Upload và Xử lý COD</button>
             </form>
         </div>
+
         <?php if (!empty($file_download)) : ?>
             <p class="download-link"><a href="<?php echo $file_download; ?>" download>Tải xuống file kết quả</a></p>
         <?php endif; ?>
@@ -298,7 +332,7 @@ $result = $stmt->execute();
                     </thead>
                     <tbody>
                         <?php
-                        $i = ($page - 1) * $limit + 1; 
+                        $i = ($page - 1) * $limit + 1;
                         while ($row = $result->fetchArray(SQLITE3_ASSOC)):
                         ?>
                             <tr>

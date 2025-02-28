@@ -27,28 +27,30 @@ body {
 .upload-section {
     display: flex;
     justify-content: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-bottom: 15px;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: nowrap;
 }
 
 /* Input file */
 .file-input {
-    padding: 8px;
+    padding: 6px;
     border: 1px solid #ccc;
     border-radius: 5px;
     background: white;
+    cursor: pointer;
 }
 
 /* Nút bấm */
 .btn {
-    padding: 10px 15px;
+    padding: 8px 12px;
     background: #007bff;
     color: white;
     border: none;
     border-radius: 5px;
     cursor: pointer;
     transition: 0.3s;
+    white-space: nowrap;
 }
 
 .btn:hover {
@@ -185,4 +187,44 @@ tr:hover {
     background-color: #fff; 
     z-index: 1000;
     box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+}
+.tooltip {
+    position: absolute;
+    background: rgba(255, 0, 0, 0.8);
+    color: white;
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 5px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+    transform: translateY(-5px);
+    visibility: hidden;
+    pointer-events: none;
+}
+.show-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+.upload-group {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.upload-group .tooltip {
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-5px);
+}
+.file-input:hover + .tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+.upload-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
