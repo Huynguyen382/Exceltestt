@@ -1,0 +1,20 @@
+version: "3"
+
+networks:
+  proxy:
+    external:
+      name: nginx-proxy
+
+services:
+  app:
+    build: .
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.goship_ems_tool.rule=Host(`tool.goship.lc`)"
+      - "traefik.http.services.goship_ems_tool.loadbalancer.server.port=80"
+      - "traefik.http.routers.goship_ems_tool.entrypoints=web"
+    volumes:
+      - ./Database:/var/www/html/Database
+      - ./uploads:/var/www/html/uploads
+    networks:
+      - proxy
