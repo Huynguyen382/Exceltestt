@@ -14,8 +14,13 @@ services:
       - "traefik.http.routers.goship_ems_tool.rule=Host(`toole.goship.io`)"
       - "traefik.http.services.goship_ems_tool.loadbalancer.server.port=80"
       - "traefik.http.routers.goship_ems_tool.entrypoints=web"
-      - "traefik.http.middlewares.auth.basicauth.users=root:{SHA}/eHOpeftvMGNR4jBNSt8EcYh2NA=" #root/Goship2025
       - "traefik.http.routers.goship_ems_tool.middlewares=auth"
+      - "traefik.http.middlewares.auth.basicauth.users=root:{SHA}/eHOpeftvMGNR4jBNSt8EcYh2NA=" #root/Goship2025
+      - "traefik.http.routers.goship_ems_tool_ssl.rule=Host(`toole.goship.io`)"
+      - "traefik.http.routers.goship_ems_tool_ssl.entrypoints=websecure"
+      - "traefik.http.routers.goship_ems_tool_ssl.tls=true"
+      - "traefik.http.routers.goship_ems_tool_ssl.tls.certresolver=certbot"
+      - "traefik.http.routers.goship_ems_tool_ssl.middlewares=auth"
     volumes:
       - ./Database:/var/www/html/Database
       - ./uploads:/var/www/html/uploads
