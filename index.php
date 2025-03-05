@@ -44,7 +44,7 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                             $Ma_E1,
                             date('Y-m-d', strtotime($sheet->getCell("B$row")->getValue())),
                             (int)$sheet->getCell("F$row")->getValue(),
-                            (int)str_replace(',', '', $sheet->getCell("M$row")->getValue()),
+                            (int)str_replace(',', '', $sheet->getCell("M$row")->getCalculatedValue()),
                             trim($sheet->getCell("N$row")->getValue()),
                             trim($sheet->getCell("O$row")->getValue()),
                             trim($sheet->getCell("P$row")->getValue()),
