@@ -12,7 +12,6 @@ ini_set('max_file_uploads', 100);
 ini_set('upload_max_filesize', '200M');
 ini_set('post_max_size', '500M');
 
-
 $db = new SQLite3(__DIR__ . '/Database/ONESHIP.db');
 $db->exec("PRAGMA synchronous = OFF;");
 $db->exec("PRAGMA journal_mode = WAL;");
@@ -26,20 +25,40 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
 
     if (!empty($_FILES['excelFiles']['tmp_name']) && is_array($_FILES['excelFiles']['tmp_name'])) {
         $db->exec("BEGIN TRANSACTION;");
-        $total_imported = 0;
+        $totalImported = 0;
         foreach ($_FILES['excelFiles']['tmp_name'] as $index => $file) {
             $reader = IOFactory::createReaderForFile($file);
             $reader->setReadDataOnly(true);
-            $spreadsheet = $reader->load($file);
-            $sheet = $spreadsheet->getActiveSheet();
+            $spreadSheet = $reader->load($file);
+            $sheet = $spreadSheet->getActiveSheet();
             $title = trim($sheet->getCell('A1')->getValue());
             $data = [];
-
             switch ($title) {
+                case "Ma_E1":
+                    for ($row = 2; $row <= $sheet->getHighestRow(); $row++) {
+                        $Ma_E1 = trim($sheet->getCell("A$row")->getValue());
+                        if (!preg_match('/^E.*VN$/', $Ma_E1)) {
+                            continue;
+                        }
+                        $data[]=[
+                            $Ma_E1,
+                            date('Y-m-d', strtotime($sheet->getCell("B$row")->getValue())),
+                            (int)$sheet->getCell("F$row")->getValue(),
+                            (int)str_replace(',', '', $sheet->getCell("M$row")->getValue()),
+                            trim($sheet->getCell("N$row")->getValue()),
+                            trim($sheet->getCell("O$row")->getValue()),
+                            trim($sheet->getCell("P$row")->getValue()),
+                            trim($sheet->getCell("W$row")->getValue()),
+                            trim($sheet->getCell("S$row")->getValue())
+
+                        ]; }
+                        break;
                 case "Mã E1":
                     for ($row = 2; $row <= $sheet->getHighestRow(); $row++) {
                         $Ma_E1 = trim($sheet->getCell("A$row")->getValue());
-                        if (!preg_match('/^E.*VN$/', $Ma_E1)) continue;
+                        if (!preg_match('/^E.*VN$/', $Ma_E1)) {
+                            continue;
+                        }
 
                         $data[] = [
                             $Ma_E1,
@@ -57,7 +76,9 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                 case "BẢNG TỔNG HỢP NỢ CHI TIẾT":
                     for ($row = 2; $row <= $sheet->getHighestRow(); $row++) {
                         $Ma_E1 = trim($sheet->getCell("A$row")->getValue());
-                        if (!preg_match('/^E.*VN$/', $Ma_E1)) continue;
+                        if (!preg_match('/^E.*VN$/', $Ma_E1)) {
+                            continue;
+                        }
 
                         $data[] = [
                             $Ma_E1,
@@ -72,11 +93,12 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                         ];
                     }
                     break;
-
                 case "TỔNG HỢP SẢN LƯỢNG KHÁCH HÀNG TẠI ĐƠN VỊ":
                     for ($row = 2; $row <= $sheet->getHighestRow(); $row++) {
                         $Ma_E1 = trim($sheet->getCell("A$row")->getValue());
-                        if (!preg_match('/^E.*VN$/', $Ma_E1)) continue;
+                        if (!preg_match('/^E.*VN$/', $Ma_E1)) {
+                            continue;
+                        }
 
                         $data[] = [
                             $Ma_E1,
@@ -94,7 +116,9 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                 case "TỔNG HỢP CHUYỂN HOÀN THEO NGÀY":
                     for ($row = 2; $row <= $sheet->getHighestRow(); $row++) {
                         $Ma_E1 = trim($sheet->getCell("A$row")->getValue());
-                        if (!preg_match('/^E.*VN$/', $Ma_E1)) continue;
+                        if (!preg_match('/^E.*VN$/', $Ma_E1)) {
+                            continue;
+                        }
 
                         $data[] = [
                             $Ma_E1,
@@ -112,8 +136,11 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                 case "TỔNG HỢP CÁC KHÁCH HÀNG SỬ DỤNG DỊCH VỤ ENN VÀ TMD":
                     for ($row = 2; $row <= $sheet->getHighestRow(); $row++) {
                         $Ma_E1 = trim($sheet->getCell("A$row")->getValue());
-                        $Ma_E1 = preg_replace('/[^a-zA-Z0-9]/', '', $Ma_E1); // Loại bỏ ký tự ngoài số và chữ
-                        if (!preg_match('/^E.*VN$/', $Ma_E1)) continue;
+                        $Ma_E1 = preg_replace('/[^a-zA-Z0-9]/', '', $Ma_E1);
+                        if (!preg_match('/^E.*VN$/', $Ma_E1)) {
+                            continue;
+                        }
+
                         $data[] = [
                             $Ma_E1,
                             date('Y-m-d', strtotime($sheet->getCell("E$row")->getValue())),
@@ -148,8 +175,6 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                     Dien_Thoai=excluded.Dien_Thoai, 
                     Dich_Vu=excluded.Dich_Vu, 
                     So_Tham_Chieu=excluded.So_Tham_Chieu");
-
-
                 foreach ($data as $row) {
                     $stmt->reset();
                     for ($i = 0; $i < count($row); $i++) {
@@ -157,14 +182,14 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                     }
                     $stmt->execute();
                 }
-                $total_imported += count($data);
+                $totalImported += count($data);
             }
         }
         $db->exec("COMMIT;");
-        if ($total_imported > 0) {
+        if ($totalImported > 0) {
             echo "<script>
                 setTimeout(function() {
-                    alert('Nhập dữ liệu thành công! Tổng số bản ghi đã nhập: " . $total_imported . "');
+                    alert('Nhập dữ liệu thành công! Tổng số bản ghi đã nhập: " . $totalImported . "');
                 }, 500);
             </script>";
         } else {
@@ -177,50 +202,43 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
     }
 }
 
-$file_download = "";
-
+$fileDownload = "";
 if (isset($_POST['submit']) && isset($_FILES['file']) && $_FILES['file']['error'] == 0) {
-    $file_tmp_path = $_FILES['file']['tmp_name'];
-    $file_name = pathinfo($_FILES['file']['name'], PATHINFO_FILENAME);
-    $timestamp = date('Ymd_His');
-    $output_file = "uploads/{$file_name}_{$timestamp}.xlsx";
-
-    $spreadsheet = IOFactory::load($file_tmp_path);
-    $worksheet = $spreadsheet->getActiveSheet();
-    $highestRow = $worksheet->getHighestRow();
+    $fileTmpPath = $_FILES['file']['tmp_name'];
+    $fileName = pathinfo($_FILES['file']['name'], PATHINFO_FILENAME);
+    $timeStamp = date('Ymd_His');
+    $outputFile = "uploads/{$fileName}_{$timeStamp}.xlsx";
+    $spreadSheet = IOFactory::load($fileTmpPath);
+    $workSheet = $spreadSheet->getActiveSheet();
+    $highestRow = $workSheet->getHighestRow();
     $colCuocChinh = 'J';
-    $worksheet->setCellValue($colCuocChinh . '1', "Cuoc_Chinh");
+    $workSheet->setCellValue($colCuocChinh . '1', "Cuoc_Chinh");
 
     for ($row = 2; $row <= $highestRow; $row++) {
-        $ma_e1 = trim($worksheet->getCell('C' . $row)->getValue() ?? '');
+        $ma_e1 = trim($workSheet->getCell('C' . $row)->getValue() ?? '');
         if (!empty($ma_e1)) {
             $query = "SELECT Cuoc_Chinh FROM ONESHIP WHERE Ma_E1 = :ma_e1";
             $stmt = $db->prepare($query);
             $stmt->bindValue(':ma_e1', $ma_e1, SQLITE3_TEXT);
             $result = $stmt->execute();
-            if ($row_data = $result->fetchArray(SQLITE3_ASSOC)) {
-                $worksheet->setCellValue($colCuocChinh . $row, $row_data['Cuoc_Chinh']);
+            if ($rowData = $result->fetchArray(SQLITE3_ASSOC)) {
+                $workSheet->setCellValue($colCuocChinh . $row, $rowData['Cuoc_Chinh']);
             }
         }
     }
 
-    $writer = new Xlsx($spreadsheet);
-    $writer->save($output_file);
-    $file_download = $output_file;
-    if ($file_download) {
+    $writer = new Xlsx($spreadSheet);
+    $writer->save($outputFile);
+    $fileDownload = $outputFile;
+    if ($fileDownload) {
         echo "<script>alert('Xử lý thành công! Bạn có thể tải file kết quả.');</script>";
     }
-    
 }
-
 
 $limit = 1000;
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $limit;
-
-
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
-
 $whereClause = "";
 $params = [];
 if ($search) {
@@ -228,28 +246,23 @@ if ($search) {
     $params[':search'] = "%$search%";
 }
 
-
 $queryCount = "SELECT COUNT(*) FROM ONESHIP $whereClause";
 $stmt = $db->prepare($queryCount);
 foreach ($params as $key => $value) {
     $stmt->bindValue($key, $value, SQLITE3_TEXT);
 }
+
 $totalRows = $stmt->execute()->fetchArray()[0];
 $totalPages = ceil($totalRows / $limit);
-
-
 $query = "SELECT * FROM ONESHIP $whereClause ORDER BY Ngay_Phat_Hanh DESC LIMIT $limit OFFSET $offset";
 $stmt = $db->prepare($query);
 foreach ($params as $key => $value) {
     $stmt->bindValue($key, $value, SQLITE3_TEXT);
 }
 $result = $stmt->execute();
-
-
 ?>
 <!DOCTYPE html>
 <html lang="vi">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -261,11 +274,11 @@ $result = $stmt->execute();
             let tooltip = document.getElementById(tooltipId);
 
             if (fileInput.files.length === 0) {
-                tooltip.classList.add("show-tooltip"); // Hiển thị tooltip nếu chưa chọn file
+                tooltip.classList.add("show-tooltip");
                 event.preventDefault();
                 return false;
             } else {
-                tooltip.classList.remove("show-tooltip"); // Ẩn tooltip khi đã chọn file
+                tooltip.classList.remove("show-tooltip"); 
                 return true;
             }
         }
@@ -293,8 +306,8 @@ $result = $stmt->execute();
             </form>
         </div>
 
-        <?php if (!empty($file_download)) : ?>
-            <p class="download-link"><a href="<?php echo $file_download; ?>" download>Tải xuống file kết quả</a></p>
+        <?php if (!empty($fileDownload)) : ?>
+            <p class="download-link"><a href="<?php echo $fileDownload; ?>" download>Tải xuống file kết quả</a></p>
         <?php endif; ?>
 
         <h2 class="table-title">Danh Sách GOSHIP</h2>
