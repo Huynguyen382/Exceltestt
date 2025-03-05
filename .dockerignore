@@ -1,0 +1,7 @@
+/uploads/*
+!/uploads/.gitkeep
+
+/Database/*
+!/Database/.gitkeep
+
+/vendor
