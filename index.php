@@ -5,6 +5,7 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
 
 ini_set('max_execution_time', 600);
 ini_set('memory_limit', '512M');
@@ -18,6 +19,16 @@ $db->exec("PRAGMA journal_mode = WAL;");
 $db->exec("PRAGMA temp_store = MEMORY;");
 $db->exec("PRAGMA cache_size = 1000000;");
 
+function excelDateToPHP($excelDate) {
+    if (is_numeric($excelDate)) {
+        if ($excelDate > 50000) {
+            return $excelDate; 
+        }
+        return date('Y-m-d', strtotime("1899-12-30 +$excelDate days"));
+    }
+    return $excelDate;
+}
+
 if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
     if (!file_exists('uploads')) {
         mkdir('uploads', 0777, true);
@@ -26,182 +37,106 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
     if (!empty($_FILES['excelFiles']['tmp_name']) && is_array($_FILES['excelFiles']['tmp_name'])) {
         $db->exec("BEGIN TRANSACTION;");
         $totalImported = 0;
+
         foreach ($_FILES['excelFiles']['tmp_name'] as $index => $file) {
             $reader = IOFactory::createReaderForFile($file);
             $reader->setReadDataOnly(true);
             $spreadSheet = $reader->load($file);
             $sheet = $spreadSheet->getActiveSheet();
-            $title = trim($sheet->getCell('A1')->getValue());
+
+            $headerRow = null;
+            for ($row = 1; $row <= 5; $row++) {
+                $cellValue = trim($sheet->getCell("A$row")->getValue());
+                if (preg_match('/^(Mã E1|Ma_E1)$/i', $cellValue)) {
+                    $headerRow = $row;
+                    break;
+                }
+            }
+
+            if (!$headerRow) {
+                echo "<script>alert('Không tìm thấy tiêu đề Mã E1 trong file: " . $_FILES['excelFiles']['name'][$index] . "');</script>";
+                continue;
+            }
+
+            $columns = [];
+            $highestColumnIndex = Coordinate::columnIndexFromString($sheet->getHighestColumn());
+
+            for ($col = 1; $col <= $highestColumnIndex; $col++) {
+                $colLetter = Coordinate::stringFromColumnIndex($col);
+                $colValue = trim($sheet->getCell("$colLetter$headerRow")->getValue());
+
+                if (preg_match('/^(Mã E1|Ma_E1)$/i', $colValue)) {
+                    $columns['Ma_E1'] = $col;
+                } elseif (preg_match('/^(Ngày Đóng|Ngay_Phat_Hanh|Ngay_Dong)$/i', $colValue)) {
+                    $columns['Ngay_Phat_Hanh'] = $col;
+                } elseif (preg_match('/^(Khối lượng|Khoi_Luong|KL_Tinh_Cuoc)$/i', $colValue)) {
+                    $columns['KL_Tinh_Cuoc'] = $col;
+                } elseif (preg_match('/^(Cuoc_E1|Cước E1)$/i', $colValue)) {
+                    $columns['Cuoc_Chinh'] = $col;
+                } elseif (preg_match('/^(Cước Chính|Cuoc_Chinh)$/i', $colValue)) {
+                    $columns['Cuoc_Chinh'] = $col;
+                } elseif (preg_match('/^(Nguoi_Nhan|Người Nhận)$/i', $colValue)) {
+                    $columns['Nguoi_Nhan'] = $col;
+                } elseif (preg_match('/^(DC_Nhan|DCNhan)$/i', $colValue)) {
+                    $columns['DCNhan'] = $col;
+                } elseif (preg_match('/^(Dien_Thoai|Dien_Thoai Nhan)$/i', $colValue)) {
+                    $columns['Dien_Thoai'] = $col;
+                } elseif (preg_match('/^(So_Tham_Chieu)$/i', $colValue)) {
+                    $columns['So_Tham_Chieu'] = $col;
+                }
+            }
+
+            if (!isset($columns['Ma_E1'])) {
+                echo "<script>alert('Không tìm thấy cột Mã E1 trong file: " . $_FILES['excelFiles']['name'][$index] . "');</script>";
+                continue;
+            }
+
             $data = [];
-            switch ($title) {
-                case "Ma_E1":
-                    for ($row = 2; $row <= $sheet->getHighestRow(); $row++) {
-                        $Ma_E1 = trim($sheet->getCell("A$row")->getValue());
-                        if (!preg_match('/^E.*VN$/', $Ma_E1)) {
-                            continue;
-                        }
-                        $data[]=[
-                            $Ma_E1,
-                            date('Y-m-d', strtotime($sheet->getCell("B$row")->getValue())),
-                            (int)$sheet->getCell("F$row")->getValue(),
-                            (int)str_replace(',', '', $sheet->getCell("M$row")->getCalculatedValue()),
-                            trim($sheet->getCell("N$row")->getValue()),
-                            trim($sheet->getCell("O$row")->getValue()),
-                            trim($sheet->getCell("P$row")->getValue()),
-                            trim($sheet->getCell("W$row")->getValue()),
-                            trim($sheet->getCell("S$row")->getValue())
+            for ($row = $headerRow + 1; $row <= $sheet->getHighestRow(); $row++) {
+                $Ma_E1 = trim($sheet->getCell(Coordinate::stringFromColumnIndex($columns['Ma_E1']) . $row)->getValue());
+                if (!preg_match('/^E.*VN$/', $Ma_E1)) {
+                    continue;
+                }
 
-                        ]; }
-                        break;
-                case "Mã E1":
-                    for ($row = 2; $row <= $sheet->getHighestRow(); $row++) {
-                        $Ma_E1 = trim($sheet->getCell("A$row")->getValue());
-                        if (!preg_match('/^E.*VN$/', $Ma_E1)) {
-                            continue;
-                        }
-
-                        $data[] = [
-                            $Ma_E1,
-                            date('Y-m-d', strtotime($sheet->getCell("B$row")->getValue())),
-                            (int)$sheet->getCell("B$row")->getValue(),
-                            (int)str_replace(',', '', $sheet->getCell("F$row")->getValue()),
-                            trim($sheet->getCell("M$row")->getValue()),
-                            NULL,
-                            NULL,
-                            null,
-                            trim($sheet->getCell("N$row")->getValue())
-                        ];
-                    }
-                    break;
-                case "BẢNG TỔNG HỢP NỢ CHI TIẾT":
-                    for ($row = 2; $row <= $sheet->getHighestRow(); $row++) {
-                        $Ma_E1 = trim($sheet->getCell("A$row")->getValue());
-                        if (!preg_match('/^E.*VN$/', $Ma_E1)) {
-                            continue;
-                        }
-
-                        $data[] = [
-                            $Ma_E1,
-                            date('Y-m-d', strtotime($sheet->getCell("B$row")->getValue())),
-                            (int)$sheet->getCell("F$row")->getValue(),
-                            (int)str_replace(',', '', $sheet->getCell("I$row")->getValue()),
-                            trim($sheet->getCell("L$row")->getValue()),
-                            trim($sheet->getCell("M$row")->getValue()),
-                            trim($sheet->getCell("N$row")->getValue()),
-                            trim($sheet->getCell("U$row")->getValue()),
-                            trim($sheet->getCell("Q$row")->getValue())
-                        ];
-                    }
-                    break;
-                case "TỔNG HỢP SẢN LƯỢNG KHÁCH HÀNG TẠI ĐƠN VỊ":
-                    for ($row = 2; $row <= $sheet->getHighestRow(); $row++) {
-                        $Ma_E1 = trim($sheet->getCell("A$row")->getValue());
-                        if (!preg_match('/^E.*VN$/', $Ma_E1)) {
-                            continue;
-                        }
-
-                        $data[] = [
-                            $Ma_E1,
-                            date('Y-m-d', strtotime($sheet->getCell("K$row")->getValue())),
-                            (int)$sheet->getCell("B$row")->getValue(),
-                            (int)str_replace(',', '', $sheet->getCell("F$row")->getValue()),
-                            trim($sheet->getCell("M$row")->getValue()),
-                            null,
-                            null,
-                            null,
-                            trim($sheet->getCell("N$row")->getValue())
-                        ];
-                    }
-                    break;
-                case "TỔNG HỢP CHUYỂN HOÀN THEO NGÀY":
-                    for ($row = 2; $row <= $sheet->getHighestRow(); $row++) {
-                        $Ma_E1 = trim($sheet->getCell("A$row")->getValue());
-                        if (!preg_match('/^E.*VN$/', $Ma_E1)) {
-                            continue;
-                        }
-
-                        $data[] = [
-                            $Ma_E1,
-                            date('Y-m-d', strtotime($sheet->getCell("L$row")->getValue())),
-                            null,
-                            (int)str_replace(',', '', $sheet->getCell("E$row")->getValue()),
-                            trim($sheet->getCell("N$row")->getValue()),
-                            null,
-                            null,
-                            null,
-                            trim($sheet->getCell("O$row")->getValue())
-                        ];
-                    }
-                    break;
-                case "TỔNG HỢP CÁC KHÁCH HÀNG SỬ DỤNG DỊCH VỤ ENN VÀ TMD":
-                    for ($row = 2; $row <= $sheet->getHighestRow(); $row++) {
-                        $Ma_E1 = trim($sheet->getCell("A$row")->getValue());
-                        $Ma_E1 = preg_replace('/[^a-zA-Z0-9]/', '', $Ma_E1);
-                        if (!preg_match('/^E.*VN$/', $Ma_E1)) {
-                            continue;
-                        }
-
-                        $data[] = [
-                            $Ma_E1,
-                            date('Y-m-d', strtotime($sheet->getCell("E$row")->getValue())),
-                            (int)$sheet->getCell("B$row")->getValue(),
-                            (int)str_replace(',', '', $sheet->getCell("C$row")->getValue()),
-                            null,
-                            null,
-                            null,
-                            null,
-                            null
-                        ];
-                    }
-                    break;
-                default:
-                    echo "<script>
-                setTimeout(function() {
-                    alert('Tiêu đề bảng không hợp lệ trong file: " . $_FILES['excelFiles']['name'][$index] . "');
-                }, 500);
-            </script>";
+                $rowData = [
+                    'Ma_E1'          => $Ma_E1,
+                    'Ngay_Phat_Hanh' => isset($columns['Ngay_Phat_Hanh']) ? excelDateToPHP($sheet->getCell(Coordinate::stringFromColumnIndex($columns['Ngay_Phat_Hanh']) . $row)->getValue()) : null,
+                    'KL_Tinh_Cuoc'   => isset($columns['KL_Tinh_Cuoc']) ? (int)$sheet->getCell(Coordinate::stringFromColumnIndex($columns['KL_Tinh_Cuoc']) . $row)->getValue() : null,
+                    'Cuoc_Chinh'     => isset($columns['Cuoc_Chinh']) ? (int)str_replace(',', '', $sheet->getCell(Coordinate::stringFromColumnIndex($columns['Cuoc_Chinh']) . $row)->getCalculatedValue()) : null,
+                    'Nguoi_Nhan'     => isset($columns['Nguoi_Nhan']) ? trim($sheet->getCell(Coordinate::stringFromColumnIndex($columns['Nguoi_Nhan']) . $row)->getValue()) : null,
+                    'DCNhan'         => isset($columns['DCNhan']) ? trim($sheet->getCell(Coordinate::stringFromColumnIndex($columns['DCNhan']) . $row)->getValue()) : null,
+                    'Dien_Thoai'     => isset($columns['Dien_Thoai']) ? trim($sheet->getCell(Coordinate::stringFromColumnIndex($columns['Dien_Thoai']) . $row)->getValue()) : null,
+                    'So_Tham_Chieu'  => isset($columns['So_Tham_Chieu']) ? trim($sheet->getCell(Coordinate::stringFromColumnIndex($columns['So_Tham_Chieu']) . $row)->getValue()) : null,
+                ];
+                $data[] = $rowData;
             }
 
             if (!empty($data)) {
-                $stmt = $db->prepare("INSERT INTO ONESHIP 
-                    (Ma_E1, Ngay_Phat_Hanh, KL_Tinh_Cuoc, Cuoc_Chinh, Nguoi_Nhan, DCNhan, Dien_Thoai, Dich_Vu, So_Tham_Chieu)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                $stmt = $db->prepare("INSERT INTO ONESHIP (Ma_E1, Ngay_Phat_Hanh, KL_Tinh_Cuoc, Cuoc_Chinh, Nguoi_Nhan, DCNhan, Dien_Thoai, So_Tham_Chieu) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?) 
                     ON CONFLICT(Ma_E1) DO UPDATE SET 
-                    Ngay_Phat_Hanh=excluded.Ngay_Phat_Hanh, 
-                    KL_Tinh_Cuoc=excluded.KL_Tinh_Cuoc, 
-                    Cuoc_Chinh=excluded.Cuoc_Chinh, 
-                    Nguoi_Nhan=excluded.Nguoi_Nhan, 
-                    DCNhan=excluded.DCNhan, 
-                    Dien_Thoai=excluded.Dien_Thoai, 
-                    Dich_Vu=excluded.Dich_Vu, 
-                    So_Tham_Chieu=excluded.So_Tham_Chieu");
+                    Ngay_Phat_Hanh=excluded.Ngay_Phat_Hanh, KL_Tinh_Cuoc=excluded.KL_Tinh_Cuoc, 
+                    Cuoc_Chinh=excluded.Cuoc_Chinh, Nguoi_Nhan=excluded.Nguoi_Nhan, 
+                    DCNhan=excluded.DCNhan, Dien_Thoai=excluded.Dien_Thoai, So_Tham_Chieu=excluded.So_Tham_Chieu");
+
                 foreach ($data as $row) {
-                    $stmt->reset();
-                    for ($i = 0; $i < count($row); $i++) {
-                        $stmt->bindValue($i + 1, $row[$i]);
-                    }
+                    $stmt->bindValue(1, $row['Ma_E1'], SQLITE3_TEXT);
+                    $stmt->bindValue(2, $row['Ngay_Phat_Hanh'], SQLITE3_TEXT);
+                    $stmt->bindValue(3, $row['KL_Tinh_Cuoc'], SQLITE3_INTEGER);
+                    $stmt->bindValue(4, $row['Cuoc_Chinh'], SQLITE3_INTEGER);
+                    $stmt->bindValue(5, $row['Nguoi_Nhan'], SQLITE3_TEXT);
+                    $stmt->bindValue(6, $row['DCNhan'], SQLITE3_TEXT);
+                    $stmt->bindValue(7, $row['Dien_Thoai'], SQLITE3_TEXT);
+                    $stmt->bindValue(8, $row['So_Tham_Chieu'], SQLITE3_TEXT);
                     $stmt->execute();
                 }
                 $totalImported += count($data);
             }
         }
         $db->exec("COMMIT;");
-        if ($totalImported > 0) {
-            echo "<script>
-                setTimeout(function() {
-                    alert('Nhập dữ liệu thành công! Tổng số bản ghi đã nhập: " . $totalImported . "');
-                }, 500);
-            </script>";
-        } else {
-            echo "<script>
-                setTimeout(function() {
-                    alert('Nhập dữ liệu thất bại! Không có bản ghi nào được nhập.');
-                }, 500);
-            </script>";
-        }
+        echo "<script>alert('Nhập dữ liệu thành công! Tổng số bản ghi: $totalImported');</script>";
     }
 }
-
 $fileDownload = "";
 if (isset($_POST['submit']) && isset($_FILES['file']) && $_FILES['file']['error'] == 0) {
     $fileTmpPath = $_FILES['file']['tmp_name'];
@@ -211,18 +146,40 @@ if (isset($_POST['submit']) && isset($_FILES['file']) && $_FILES['file']['error'
     $spreadSheet = IOFactory::load($fileTmpPath);
     $workSheet = $spreadSheet->getActiveSheet();
     $highestRow = $workSheet->getHighestRow();
-    $colCuocChinh = 'J';
-    $workSheet->setCellValue($colCuocChinh . '1', "Cuoc_Chinh");
+    $highestColumnIndex = Coordinate::columnIndexFromString($workSheet->getHighestColumn());
 
-    for ($row = 2; $row <= $highestRow; $row++) {
-        $ma_e1 = trim($workSheet->getCell('C' . $row)->getValue() ?? '');
-        if (!empty($ma_e1)) {
-            $query = "SELECT Cuoc_Chinh FROM ONESHIP WHERE Ma_E1 = :ma_e1";
-            $stmt = $db->prepare($query);
-            $stmt->bindValue(':ma_e1', $ma_e1, SQLITE3_TEXT);
-            $result = $stmt->execute();
-            if ($rowData = $result->fetchArray(SQLITE3_ASSOC)) {
-                $workSheet->setCellValue($colCuocChinh . $row, $rowData['Cuoc_Chinh']);
+    // Xác định vị trí cột chứa tiêu đề "Mã E1" hoặc "mã E1"
+    $colMaE1Index = null;
+    for ($col = 1; $col <= $highestColumnIndex; $col++) {
+        $colLetter = Coordinate::stringFromColumnIndex($col);
+        $colValue = trim($workSheet->getCell($colLetter . '1')->getValue());
+
+        if (preg_match('/^(Mã E1|mã E1|Ma_E1|ma_e1)$/i', $colValue)) {
+            $colMaE1Index = $col;
+            break;
+        }
+    }
+
+    if ($colMaE1Index === null) {
+        echo "<script>alert('Không tìm thấy cột chứa Mã E1 trong file Excel.');</script>";
+    } else {
+        $colMaE1Letter = Coordinate::stringFromColumnIndex($colMaE1Index);
+
+        // Xác định cột cuối cùng và đặt tiêu đề "Cuoc_Chinh"
+        $colCuocChinhIndex = $highestColumnIndex + 1;
+        $colCuocChinhLetter = Coordinate::stringFromColumnIndex($colCuocChinhIndex);
+        $workSheet->setCellValue($colCuocChinhLetter . '1', "Cuoc_Chinh");
+
+        for ($row = 2; $row <= $highestRow; $row++) {
+            $ma_e1 = trim($workSheet->getCell($colMaE1Letter . $row)->getValue() ?? '');
+            if (!empty($ma_e1)) {
+                $query = "SELECT Cuoc_Chinh FROM ONESHIP WHERE Ma_E1 = :ma_e1";
+                $stmt = $db->prepare($query);
+                $stmt->bindValue(':ma_e1', $ma_e1, SQLITE3_TEXT);
+                $result = $stmt->execute();
+                if ($rowData = $result->fetchArray(SQLITE3_ASSOC)) {
+                    $workSheet->setCellValue($colCuocChinhLetter . $row, $rowData['Cuoc_Chinh']);
+                }
             }
         }
     }
@@ -234,6 +191,8 @@ if (isset($_POST['submit']) && isset($_FILES['file']) && $_FILES['file']['error'
         echo "<script>alert('Xử lý thành công! Bạn có thể tải file kết quả.');</script>";
     }
 }
+
+
 
 $limit = 1000;
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
@@ -263,6 +222,7 @@ $result = $stmt->execute();
 ?>
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -278,7 +238,7 @@ $result = $stmt->execute();
                 event.preventDefault();
                 return false;
             } else {
-                tooltip.classList.remove("show-tooltip"); 
+                tooltip.classList.remove("show-tooltip");
                 return true;
             }
         }
