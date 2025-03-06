@@ -196,7 +196,7 @@ if (isset($_POST['submit']) && isset($_FILES['file']) && $_FILES['file']['error'
         window.location.href = '$fileDownload';
          setTimeout(function() {
             window.location.href = 'index.php';
-        }, 2000);
+        },1000);
     </script>";
     }
 }
