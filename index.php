@@ -194,6 +194,9 @@ if (isset($_POST['submit']) && isset($_FILES['file']) && $_FILES['file']['error'
         echo "<script>
         alert('Xử lý thành công! File sẽ được tải xuống tự động.');
         window.location.href = '$fileDownload';
+         setTimeout(function() {
+            window.location.href = 'index.php';
+        }, 2000);
     </script>";
     }
 }
