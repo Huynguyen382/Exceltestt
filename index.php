@@ -79,7 +79,7 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                     $columns['Nguoi_Nhan'] = $col;
                 } elseif (preg_match('/^(DC_Nhan|DCNhan)$/i', $colValue)) {
                     $columns['DCNhan'] = $col;
-                } elseif (preg_match('/^(Dien_Thoai|Dien_Thoai Nhan)$/i', $colValue)) {
+                } elseif (preg_match('/^(Dien_Thoai|Dien_Thoai_Nhan)$/i', $colValue)) {
                     $columns['Dien_Thoai'] = $col;
                 } elseif (preg_match('/^(So_Tham_Chieu)$/i', $colValue)) {
                     $columns['So_Tham_Chieu'] = $col;
@@ -148,7 +148,6 @@ if (isset($_POST['submit']) && isset($_FILES['file']) && $_FILES['file']['error'
     $highestRow = $workSheet->getHighestRow();
     $highestColumnIndex = Coordinate::columnIndexFromString($workSheet->getHighestColumn());
 
-    // Xác định vị trí cột chứa tiêu đề "Mã E1" hoặc "mã E1"
     $colMaE1Index = null;
     for ($col = 1; $col <= $highestColumnIndex; $col++) {
         $colLetter = Coordinate::stringFromColumnIndex($col);
@@ -165,7 +164,6 @@ if (isset($_POST['submit']) && isset($_FILES['file']) && $_FILES['file']['error'
     } else {
         $colMaE1Letter = Coordinate::stringFromColumnIndex($colMaE1Index);
 
-        // Xác định cột cuối cùng và đặt tiêu đề "Cuoc_Chinh"
         $colCuocChinhIndex = $highestColumnIndex + 1;
         $colCuocChinhLetter = Coordinate::stringFromColumnIndex($colCuocChinhIndex);
         $workSheet->setCellValue($colCuocChinhLetter . '1', "Cuoc_Chinh");
