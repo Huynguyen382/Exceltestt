@@ -19,16 +19,18 @@ $db->exec("PRAGMA journal_mode = WAL;");
 $db->exec("PRAGMA temp_store = MEMORY;");
 $db->exec("PRAGMA cache_size = 1000000;");
 
-function excelDateToPHP($excelDate) {
+function excelDateToPHP($excelDate)
+{
     if (is_numeric($excelDate)) {
         if ($excelDate > 50000) {
-            return $excelDate; 
+            return $excelDate;
         }
         return date('Y-m-d', strtotime("1899-12-30 +$excelDate days"));
     }
     return $excelDate;
 }
-function cleanExcelValue($value) {
+function cleanExcelValue($value)
+{
     return preg_replace('/^="(.*)"$/', '$1', trim($value));
 }
 
@@ -189,7 +191,10 @@ if (isset($_POST['submit']) && isset($_FILES['file']) && $_FILES['file']['error'
     $writer->save($outputFile);
     $fileDownload = $outputFile;
     if ($fileDownload) {
-        echo "<script>alert('Xử lý thành công! Bạn có thể tải file kết quả.');</script>";
+        echo "<script>
+        alert('Xử lý thành công! File sẽ được tải xuống tự động.');
+        window.location.href = '$fileDownload';
+    </script>";
     }
 }
 
