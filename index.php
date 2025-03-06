@@ -28,6 +28,9 @@ function excelDateToPHP($excelDate) {
     }
     return $excelDate;
 }
+function cleanExcelValue($value) {
+    return preg_replace('/^="(.*)"$/', '$1', trim($value));
+}
 
 if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
     if (!file_exists('uploads')) {
@@ -46,7 +49,7 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
 
             $headerRow = null;
             for ($row = 1; $row <= 5; $row++) {
-                $cellValue = trim($sheet->getCell("A$row")->getValue());
+                $cellValue = cleanExcelValue($sheet->getCell("A$row")->getValue());
                 if (preg_match('/^(Mã E1|Ma_E1)$/i', $cellValue)) {
                     $headerRow = $row;
                     break;
@@ -63,17 +66,17 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
 
             for ($col = 1; $col <= $highestColumnIndex; $col++) {
                 $colLetter = Coordinate::stringFromColumnIndex($col);
-                $colValue = trim($sheet->getCell("$colLetter$headerRow")->getValue());
+                $colValue = cleanExcelValue($sheet->getCell("$colLetter$headerRow")->getValue());
 
                 if (preg_match('/^(Mã E1|Ma_E1)$/i', $colValue)) {
                     $columns['Ma_E1'] = $col;
                 } elseif (preg_match('/^(Ngày Đóng|Ngay_Phat_Hanh|Ngay_Dong)$/i', $colValue)) {
                     $columns['Ngay_Phat_Hanh'] = $col;
-                } elseif (preg_match('/^(Khối lượng|Khoi_Luong|KL_Tinh_Cuoc)$/i', $colValue)) {
+                } elseif (preg_match('/^(Khối lượng|Khoi_Luong|KL_Tinh_Cuoc|Khối Lượng \(gam\))$/i', $colValue)) {
                     $columns['KL_Tinh_Cuoc'] = $col;
-                } elseif (preg_match('/^(Cuoc_E1|Cước E1)$/i', $colValue)) {
+                } elseif (preg_match('/^(Cuoc_E1|Cước E1|Cước E1 \(VNĐ\))$/i', $colValue)) {
                     $columns['Cuoc_Chinh'] = $col;
-                } elseif (preg_match('/^(Cước Chính|Cuoc_Chinh)$/i', $colValue)) {
+                } elseif (preg_match('/^(Cước Chính|Cuoc_Chinh)$/i', $colValue) && !isset($columns['Cuoc_Chinh'])) {
                     $columns['Cuoc_Chinh'] = $col;
                 } elseif (preg_match('/^(Nguoi_Nhan|Người Nhận)$/i', $colValue)) {
                     $columns['Nguoi_Nhan'] = $col;
@@ -93,20 +96,20 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
 
             $data = [];
             for ($row = $headerRow + 1; $row <= $sheet->getHighestRow(); $row++) {
-                $Ma_E1 = trim($sheet->getCell(Coordinate::stringFromColumnIndex($columns['Ma_E1']) . $row)->getValue());
+                $Ma_E1 = cleanExcelValue($sheet->getCell(Coordinate::stringFromColumnIndex($columns['Ma_E1']) . $row)->getValue());
                 if (!preg_match('/^E.*VN$/', $Ma_E1)) {
                     continue;
                 }
 
                 $rowData = [
                     'Ma_E1'          => $Ma_E1,
-                    'Ngay_Phat_Hanh' => isset($columns['Ngay_Phat_Hanh']) ? excelDateToPHP($sheet->getCell(Coordinate::stringFromColumnIndex($columns['Ngay_Phat_Hanh']) . $row)->getValue()) : null,
+                    'Ngay_Phat_Hanh' => isset($columns['Ngay_Phat_Hanh']) ? cleanExcelValue(excelDateToPHP($sheet->getCell(Coordinate::stringFromColumnIndex($columns['Ngay_Phat_Hanh']) . $row)->getValue())) : null,
                     'KL_Tinh_Cuoc'   => isset($columns['KL_Tinh_Cuoc']) ? (int)$sheet->getCell(Coordinate::stringFromColumnIndex($columns['KL_Tinh_Cuoc']) . $row)->getValue() : null,
                     'Cuoc_Chinh'     => isset($columns['Cuoc_Chinh']) ? (int)str_replace(',', '', $sheet->getCell(Coordinate::stringFromColumnIndex($columns['Cuoc_Chinh']) . $row)->getCalculatedValue()) : null,
-                    'Nguoi_Nhan'     => isset($columns['Nguoi_Nhan']) ? trim($sheet->getCell(Coordinate::stringFromColumnIndex($columns['Nguoi_Nhan']) . $row)->getValue()) : null,
-                    'DCNhan'         => isset($columns['DCNhan']) ? trim($sheet->getCell(Coordinate::stringFromColumnIndex($columns['DCNhan']) . $row)->getValue()) : null,
-                    'Dien_Thoai'     => isset($columns['Dien_Thoai']) ? trim($sheet->getCell(Coordinate::stringFromColumnIndex($columns['Dien_Thoai']) . $row)->getValue()) : null,
-                    'So_Tham_Chieu'  => isset($columns['So_Tham_Chieu']) ? trim($sheet->getCell(Coordinate::stringFromColumnIndex($columns['So_Tham_Chieu']) . $row)->getValue()) : null,
+                    'Nguoi_Nhan'     => isset($columns['Nguoi_Nhan']) ? cleanExcelValue($sheet->getCell(Coordinate::stringFromColumnIndex($columns['Nguoi_Nhan']) . $row)->getValue()) : null,
+                    'DCNhan'         => isset($columns['DCNhan']) ? cleanExcelValue($sheet->getCell(Coordinate::stringFromColumnIndex($columns['DCNhan']) . $row)->getValue()) : null,
+                    'Dien_Thoai'     => isset($columns['Dien_Thoai']) ? cleanExcelValue($sheet->getCell(Coordinate::stringFromColumnIndex($columns['Dien_Thoai']) . $row)->getValue()) : null,
+                    'So_Tham_Chieu'  => isset($columns['So_Tham_Chieu']) ? cleanExcelValue($sheet->getCell(Coordinate::stringFromColumnIndex($columns['So_Tham_Chieu']) . $row)->getValue()) : null,
                 ];
                 $data[] = $rowData;
             }
