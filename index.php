@@ -112,17 +112,18 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                     'DCNhan'         => isset($columns['DCNhan']) ? cleanExcelValue($sheet->getCell(Coordinate::stringFromColumnIndex($columns['DCNhan']) . $row)->getValue()) : null,
                     'Dien_Thoai'     => isset($columns['Dien_Thoai']) ? cleanExcelValue($sheet->getCell(Coordinate::stringFromColumnIndex($columns['Dien_Thoai']) . $row)->getValue()) : null,
                     'So_Tham_Chieu'  => isset($columns['So_Tham_Chieu']) ? cleanExcelValue($sheet->getCell(Coordinate::stringFromColumnIndex($columns['So_Tham_Chieu']) . $row)->getValue()) : null,
+                    'Ten_File'       => $_FILES['excelFiles']['name'][$index],
                 ];
                 $data[] = $rowData;
             }
 
             if (!empty($data)) {
-                $stmt = $db->prepare("INSERT INTO ONESHIP (Ma_E1, Ngay_Phat_Hanh, KL_Tinh_Cuoc, Cuoc_Chinh, Nguoi_Nhan, DCNhan, Dien_Thoai, So_Tham_Chieu) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?) 
+                $stmt = $db->prepare("INSERT INTO ONESHIP (Ma_E1, Ngay_Phat_Hanh, KL_Tinh_Cuoc, Cuoc_Chinh, Nguoi_Nhan, DCNhan, Dien_Thoai, So_Tham_Chieu, Ten_File) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) 
                     ON CONFLICT(Ma_E1) DO UPDATE SET 
                     Ngay_Phat_Hanh=excluded.Ngay_Phat_Hanh, KL_Tinh_Cuoc=excluded.KL_Tinh_Cuoc, 
                     Cuoc_Chinh=excluded.Cuoc_Chinh, Nguoi_Nhan=excluded.Nguoi_Nhan, 
-                    DCNhan=excluded.DCNhan, Dien_Thoai=excluded.Dien_Thoai, So_Tham_Chieu=excluded.So_Tham_Chieu");
+                    DCNhan=excluded.DCNhan, Dien_Thoai=excluded.Dien_Thoai, So_Tham_Chieu=excluded.So_Tham_Chieu, Ten_File=excluded.Ten_File");
 
                 foreach ($data as $row) {
                     $stmt->bindValue(1, $row['Ma_E1'], SQLITE3_TEXT);
@@ -133,6 +134,8 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
                     $stmt->bindValue(6, $row['DCNhan'], SQLITE3_TEXT);
                     $stmt->bindValue(7, $row['Dien_Thoai'], SQLITE3_TEXT);
                     $stmt->bindValue(8, $row['So_Tham_Chieu'], SQLITE3_TEXT);
+                    $stmt->bindValue(9, $row['Ten_File'], SQLITE3_TEXT);
+
                     $stmt->execute();
                 }
                 $totalImported += count($data);
@@ -310,6 +313,7 @@ $result = $stmt->execute();
                             <th>Điện Thoại</th>
                             <th>Dịch vụ</th>
                             <th>Số tham chiếu</th>
+                            <th>Nhập từ bảng</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -328,7 +332,7 @@ $result = $stmt->execute();
                                 <td><?= htmlspecialchars($row['Dien_Thoai']) ?></td>
                                 <td><?= htmlspecialchars($row['Dich_Vu']) ?></td>
                                 <td><?= htmlspecialchars($row['So_Tham_Chieu']) ?></td>
-
+                                <td><?= htmlspecialchars($row['Ten_File']) ?></td>
                             </tr>
                         <?php endwhile; ?>
                     </tbody>
