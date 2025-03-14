@@ -48,46 +48,52 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
             $reader->setReadDataOnly(true);
             $spreadSheet = $reader->load($file);
             $sheet = $spreadSheet->getActiveSheet();
-
             $headerRow = null;
+            $headerCol = null;
+            $highestColumnIndex = Coordinate::columnIndexFromString($sheet->getHighestColumn());
+
             for ($row = 1; $row <= 5; $row++) {
-                $cellValue = cleanExcelValue($sheet->getCell("A$row")->getValue());
-                if (preg_match('/^(Mã E1|Ma_E1)$/i', $cellValue)) {
-                    $headerRow = $row;
-                    break;
+                for ($col = 1; $col <= $highestColumnIndex; $col++) {
+                    $colLetter = Coordinate::stringFromColumnIndex($col);
+                    $cellValue = cleanExcelValue($sheet->getCell("$colLetter$row")->getValue());
+
+                    if (preg_match('/^(Số hiệu)$/i', $cellValue)) {
+                        $headerRow = $row;
+                        $headerCol = $col;
+                        break 2;
+                    }
                 }
             }
 
             if (!$headerRow) {
-                echo "<script>alert('Không tìm thấy tiêu đề Mã E1 trong file: " . $_FILES['excelFiles']['name'][$index] . "');</script>";
+                echo "<script>alert('File không hợp lệ: " . $_FILES['excelFiles']['name'][$index] . "');</script>";
                 continue;
             }
 
             $columns = [];
-            $highestColumnIndex = Coordinate::columnIndexFromString($sheet->getHighestColumn());
+            $mapping = [
+                'Số hiệu'         => 'Ma_E1',
+                'Ngày gửi'        => 'Ngay_Phat_Hanh',
+                'Trọng lượng'     => 'KL_Tinh_Cuoc',
+                'Tổng cước'       => 'Cuoc_Chinh',
+                'Người nhận'      => 'Nguoi_Nhan',
+                'Địa chỉ'         => 'DCNhan',
+                'Điện thoại'      => 'Dien_Thoai',
+                'SP Dịch vụ'      => 'Dich_Vu',
+                'Số đơn hàng'     => 'So_Tham_Chieu',
+            ];
 
             for ($col = 1; $col <= $highestColumnIndex; $col++) {
                 $colLetter = Coordinate::stringFromColumnIndex($col);
                 $colValue = cleanExcelValue($sheet->getCell("$colLetter$headerRow")->getValue());
 
-                if (preg_match('/^(Mã E1|Ma_E1)$/i', $colValue)) {
-                    $columns['Ma_E1'] = $col;
-                } elseif (preg_match('/^(Ngày Đóng|Ngay_Phat_Hanh|Ngay_Dong)$/i', $colValue)) {
-                    $columns['Ngay_Phat_Hanh'] = $col;
-                } elseif (preg_match('/^(Khối lượng|Khoi_Luong|KL_Tinh_Cuoc|Khối Lượng \(gam\))$/i', $colValue)) {
-                    $columns['KL_Tinh_Cuoc'] = $col;
-                } elseif (preg_match('/^(Cuoc_E1|Cước E1|Cước E1 \(VNĐ\))$/i', $colValue)) {
-                    $columns['Cuoc_Chinh'] = $col;
-                } elseif (preg_match('/^(Cước Chính|Cuoc_Chinh)$/i', $colValue) && !isset($columns['Cuoc_Chinh'])) {
-                    $columns['Cuoc_Chinh'] = $col;
-                } elseif (preg_match('/^(Nguoi_Nhan|Người Nhận)$/i', $colValue)) {
-                    $columns['Nguoi_Nhan'] = $col;
-                } elseif (preg_match('/^(DC_Nhan|DCNhan)$/i', $colValue)) {
-                    $columns['DCNhan'] = $col;
-                } elseif (preg_match('/^(Dien_Thoai|Dien_Thoai_Nhan)$/i', $colValue)) {
-                    $columns['Dien_Thoai'] = $col;
-                } elseif (preg_match('/^(So_Tham_Chieu)$/i', $colValue)) {
-                    $columns['So_Tham_Chieu'] = $col;
+                foreach ($mapping as $pattern => $dbColumn) {
+                    if (preg_match("/^$pattern$/i", $colValue)) {
+                        if (!isset($columns[$dbColumn])) {
+                            $columns[$dbColumn] = $col;
+                        }
+                        break;
+                    }
                 }
             }
 
@@ -118,7 +124,7 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
             }
 
             if (!empty($data)) {
-                $stmt = $db->prepare("INSERT INTO ONESHIP (Ma_E1, Ngay_Phat_Hanh, KL_Tinh_Cuoc, Cuoc_Chinh, Nguoi_Nhan, DCNhan, Dien_Thoai, So_Tham_Chieu, Ten_File) 
+                $stmt = $db->prepare("INSERT INTO tbl_VNPOST (Ma_E1, Ngay_Phat_Hanh, KL_Tinh_Cuoc, Cuoc_Chinh, Nguoi_Nhan, DCNhan, Dien_Thoai, So_Tham_Chieu, Ten_File) 
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) 
                     ON CONFLICT(Ma_E1) DO UPDATE SET 
                     Ngay_Phat_Hanh=excluded.Ngay_Phat_Hanh, KL_Tinh_Cuoc=excluded.KL_Tinh_Cuoc, 
@@ -145,6 +151,7 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
         echo "<script>alert('Nhập dữ liệu thành công! Tổng số bản ghi: $totalImported');</script>";
     }
 }
+
 $fileDownload = "";
 if (isset($_POST['submit']) && isset($_FILES['file']) && $_FILES['file']['error'] == 0) {
     $fileTmpPath = $_FILES['file']['tmp_name'];
@@ -155,6 +162,8 @@ if (isset($_POST['submit']) && isset($_FILES['file']) && $_FILES['file']['error'
     $workSheet = $spreadSheet->getActiveSheet();
     $highestRow = $workSheet->getHighestRow();
     $highestColumnIndex = Coordinate::columnIndexFromString($workSheet->getHighestColumn());
+    var_dump($highestColumnIndex);
+    die;
     $headerRow = null;
     $headerCol = null;
     for ($row = 1; $row <= 5; $row++) {
@@ -170,9 +179,8 @@ if (isset($_POST['submit']) && isset($_FILES['file']) && $_FILES['file']['error'
         }
     }
 
-
     if ($headerCol === null) {
-        echo "<script>alert('Không tìm thấy cột chứa Mã E1 trong file Excel.');</script>";
+        echo "<script>alert('Không tìm thấy cột chứa mã trong file Excel.');</script>";
     } else {
         $colMaE1Letter = Coordinate::stringFromColumnIndex($headerCol);
 
@@ -183,7 +191,7 @@ if (isset($_POST['submit']) && isset($_FILES['file']) && $_FILES['file']['error'
         for ($row = 2; $row <= $highestRow; $row++) {
             $ma_e1 = trim($workSheet->getCell($colMaE1Letter . $row)->getValue() ?? '');
             if (!empty($ma_e1)) {
-                $query = "SELECT Cuoc_Chinh FROM ONESHIP WHERE Ma_E1 = :ma_e1";
+                $query = "SELECT Cuoc_Chinh FROM tbl_VNPOST WHERE Ma_E1 = :ma_e1";
                 $stmt = $db->prepare($query);
                 $stmt->bindValue(':ma_e1', $ma_e1, SQLITE3_TEXT);
                 $result = $stmt->execute();
@@ -197,18 +205,16 @@ if (isset($_POST['submit']) && isset($_FILES['file']) && $_FILES['file']['error'
     $writer = new Xlsx($spreadSheet);
     $writer->save($outputFile);
     $fileDownload = $outputFile;
-    if ($fileDownload) {
+    if (!$fileDownload) {
         echo "<script>
         alert('Xử lý thành công! File sẽ được tải xuống tự động.');
         window.location.href = '$fileDownload';
          setTimeout(function() {
-            window.location.href = 'index.php';
+            window.location.href = 'vnpost.php';
         },1000);
     </script>";
     }
 }
-
-
 
 $limit = 1000;
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
@@ -221,7 +227,7 @@ if ($search) {
     $params[':search'] = "%$search%";
 }
 
-$queryCount = "SELECT COUNT(*) FROM ONESHIP $whereClause";
+$queryCount = "SELECT COUNT(*) FROM tbl_VNPOST $whereClause";
 $stmt = $db->prepare($queryCount);
 foreach ($params as $key => $value) {
     $stmt->bindValue($key, $value, SQLITE3_TEXT);
@@ -229,7 +235,7 @@ foreach ($params as $key => $value) {
 
 $totalRows = $stmt->execute()->fetchArray()[0];
 $totalPages = ceil($totalRows / $limit);
-$query = "SELECT * FROM ONESHIP $whereClause ORDER BY Ngay_Phat_Hanh DESC LIMIT $limit OFFSET $offset";
+$query = "SELECT * FROM tbl_VNPOST $whereClause ORDER BY Ngay_Phat_Hanh DESC LIMIT $limit OFFSET $offset";
 $stmt = $db->prepare($query);
 foreach ($params as $key => $value) {
     $stmt->bindValue($key, $value, SQLITE3_TEXT);
@@ -242,7 +248,7 @@ $result = $stmt->execute();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Danh sách Goship</title>
+    <title>Danh sách VNPOST</title>
     <link rel="stylesheet" type="text/css" href="style.css">
     <script>
         function validateFileInput(event, inputId, tooltipId) {
@@ -263,7 +269,7 @@ $result = $stmt->execute();
 
 <body>
 
-    <div class="container">
+    <div class="container">        
         <div class="upload-section">
             <form action="vnpost.php" method="post" enctype="multipart/form-data" class="upload-form">
                 <div class="upload-group">
@@ -282,18 +288,20 @@ $result = $stmt->execute();
             </form>
 
             <div class="dropdown">
-                <button class="dropdown-button">Danh sách hãng</button>
-                <div class="dropdown-menu">
-                    <a href="index.php">Danh sách Goship</a>
-                    <a href="vnpost.php">Danh sách VNPOST</a>
-                </div>
+            <button class="dropdown-button">Danh sách hãng</button>
+            <div class="dropdown-menu">
+                <a href="index.php">Danh sách Goship</a>
+                <a href="vnpost.php">Danh sách VNPOST</a>
             </div>
         </div>
+        </div>
+        
 
         <?php if (!empty($fileDownload)) : ?>
             <p class="download-link"><a href="<?php echo $fileDownload; ?>" download>Tải xuống file kết quả</a></p>
         <?php endif; ?>
-        <h2 class="table-title">Danh Sách Goship</h2>
+
+        <h2 class="table-title">Danh Sách VNPOST</h2>
 
         <div class="search-total-container">
             <div class="total-count">
@@ -304,7 +312,7 @@ $result = $stmt->execute();
                     <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Nhập Ma_E1 hoặc Ngày Phát Hành..." class="search-input">
                     <button type="submit" class="btn">Tìm kiếm</button>
                     <?php if ($search): ?>
-                        <a href="index.php"><button type="button" class="btn cancel">Xóa tìm kiếm</button></a>
+                        <a href="vnpost.php"><button type="button" class="btn cancel">Xóa tìm kiếm</button></a>
                     <?php endif; ?>
                 </form>
             </div>
