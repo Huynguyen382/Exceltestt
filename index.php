@@ -175,7 +175,6 @@ if (isset($_POST['submit']) && isset($_FILES['file']) && $_FILES['file']['error'
         echo "<script>alert('Không tìm thấy cột chứa Mã E1 trong file Excel.');</script>";
     } else {
         $colMaE1Letter = Coordinate::stringFromColumnIndex($headerCol);
-
         $colCuocChinhIndex = $highestColumnIndex + 1;
         $colCuocChinhLetter = Coordinate::stringFromColumnIndex($colCuocChinhIndex);
         $workSheet->setCellValue($colCuocChinhLetter . '1', "Cuoc_Chinh");

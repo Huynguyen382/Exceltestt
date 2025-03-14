@@ -162,8 +162,6 @@ if (isset($_POST['submit']) && isset($_FILES['file']) && $_FILES['file']['error'
     $workSheet = $spreadSheet->getActiveSheet();
     $highestRow = $workSheet->getHighestRow();
     $highestColumnIndex = Coordinate::columnIndexFromString($workSheet->getHighestColumn());
-    var_dump($highestColumnIndex);
-    die;
     $headerRow = null;
     $headerCol = null;
     for ($row = 1; $row <= 5; $row++) {
@@ -183,7 +181,6 @@ if (isset($_POST['submit']) && isset($_FILES['file']) && $_FILES['file']['error'
         echo "<script>alert('Không tìm thấy cột chứa mã trong file Excel.');</script>";
     } else {
         $colMaE1Letter = Coordinate::stringFromColumnIndex($headerCol);
-
         $colCuocChinhIndex = $highestColumnIndex + 1;
         $colCuocChinhLetter = Coordinate::stringFromColumnIndex($colCuocChinhIndex);
         $workSheet->setCellValue($colCuocChinhLetter . '1', "Cuoc_Chinh");
@@ -205,7 +202,7 @@ if (isset($_POST['submit']) && isset($_FILES['file']) && $_FILES['file']['error'
     $writer = new Xlsx($spreadSheet);
     $writer->save($outputFile);
     $fileDownload = $outputFile;
-    if (!$fileDownload) {
+    if ($fileDownload) {
         echo "<script>
         alert('Xử lý thành công! File sẽ được tải xuống tự động.');
         window.location.href = '$fileDownload';
