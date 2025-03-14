@@ -280,19 +280,15 @@ $result = $stmt->execute();
                 <button type="submit" name="submit" class="btn" onclick="return validateFileInput(event, 'fileInput2', 'tooltip2')">Upload và Xử lý COD</button>
             </form>
 
-            <div class="dropdown">
-                <button class="dropdown-button">Danh sách hãng</button>
-                <div class="dropdown-menu">
-                    <a href="index.php">Danh sách Goship</a>
-                    <a href="vnpost.php">Danh sách VNPOST</a>
-                </div>
-            </div>
+            <a href="index.php">Danh sách EMS</a>
+            <a href="vnpost.php">Danh sách VNPOST</a>
+
         </div>
 
         <?php if (!empty($fileDownload)) : ?>
             <p class="download-link"><a href="<?php echo $fileDownload; ?>" download>Tải xuống file kết quả</a></p>
         <?php endif; ?>
-        <h2 class="table-title">Danh Sách Goship</h2>
+        <h2 class="table-title">Danh Sách EMS</h2>
 
         <div class="search-total-container">
             <div class="total-count">

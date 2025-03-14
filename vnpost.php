@@ -266,7 +266,7 @@ $result = $stmt->execute();
 
 <body>
 
-    <div class="container">        
+    <div class="container">
         <div class="upload-section">
             <form action="vnpost.php" method="post" enctype="multipart/form-data" class="upload-form">
                 <div class="upload-group">
@@ -284,15 +284,10 @@ $result = $stmt->execute();
                 <button type="submit" name="submit" class="btn" onclick="return validateFileInput(event, 'fileInput2', 'tooltip2')">Upload và Xử lý COD</button>
             </form>
 
-            <div class="dropdown">
-            <button class="dropdown-button">Danh sách hãng</button>
-            <div class="dropdown-menu">
-                <a href="index.php">Danh sách Goship</a>
-                <a href="vnpost.php">Danh sách VNPOST</a>
-            </div>
+            <a href="index.php">Danh sách EMS</a>
+            <a href="vnpost.php">Danh sách VNPOST</a>
         </div>
-        </div>
-        
+
 
         <?php if (!empty($fileDownload)) : ?>
             <p class="download-link"><a href="<?php echo $fileDownload; ?>" download>Tải xuống file kết quả</a></p>
@@ -320,7 +315,7 @@ $result = $stmt->execute();
                     <thead>
                         <tr>
                             <th>STT</th>
-                            <th>Ma_E1</th>
+                            <th>Số hiệu</th>
                             <th>Ngày Phát Hành</th>
                             <th>KL Tính Cước</th>
                             <th>Cước Chính</th>
