@@ -49,6 +49,7 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
             $spreadSheet = $reader->load($file);
             $sheet = $spreadSheet->getActiveSheet();
 
+
             $headerRow = null;
             for ($row = 1; $row <= 5; $row++) {
                 $cellValue = cleanExcelValue($sheet->getCell("A$row")->getValue());
@@ -264,7 +265,7 @@ $result = $stmt->execute();
 
     <div class="container">
         <div class="upload-section">
-            <form action="vnpost.php" method="post" enctype="multipart/form-data" class="upload-form">
+            <form action="index.php" method="post" enctype="multipart/form-data" class="upload-form">
                 <div class="upload-group">
                     <input type="file" name="excelFiles[]" multiple class="file-input" id="fileInput1">
                     <span class="tooltip" id="tooltip1">Please select a file</span>
@@ -272,7 +273,7 @@ $result = $stmt->execute();
                 <button type="submit" name="submit" class="btn" onclick="return validateFileInput(event, 'fileInput1', 'tooltip1')">Nhập phí</button>
             </form>
 
-            <form action="vnpost.php" method="post" enctype="multipart/form-data" class="upload-form">
+            <form action="index.php" method="post" enctype="multipart/form-data" class="upload-form">
                 <div class="upload-group">
                     <input type="file" name="file" accept=".xls,.xlsx" required class="file-input" id="fileInput2">
                     <span class="tooltip" id="tooltip2">Please select a file</span>
