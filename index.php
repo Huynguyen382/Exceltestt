@@ -6,6 +6,7 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
+use Carbon\Carbon;
 
 ini_set('max_execution_time', 600);
 ini_set('memory_limit', '512M');
@@ -106,7 +107,7 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
 
                 $rowData = [
                     'Ma_E1'          => $Ma_E1,
-                    'Ngay_Phat_Hanh' => isset($columns['Ngay_Phat_Hanh']) ? cleanExcelValue(excelDateToPHP($sheet->getCell(Coordinate::stringFromColumnIndex($columns['Ngay_Phat_Hanh']) . $row)->getValue())) : null,
+                    'Ngay_Phat_Hanh' => date('Y-m-d'),
                     'KL_Tinh_Cuoc'   => isset($columns['KL_Tinh_Cuoc']) ? (int)$sheet->getCell(Coordinate::stringFromColumnIndex($columns['KL_Tinh_Cuoc']) . $row)->getValue() : null,
                     'Cuoc_Chinh'     => isset($columns['Cuoc_Chinh']) ? (int)str_replace(',', '', $sheet->getCell(Coordinate::stringFromColumnIndex($columns['Cuoc_Chinh']) . $row)->getCalculatedValue()) : null,
                     'Nguoi_Nhan'     => isset($columns['Nguoi_Nhan']) ? cleanExcelValue($sheet->getCell(Coordinate::stringFromColumnIndex($columns['Nguoi_Nhan']) . $row)->getValue()) : null,
