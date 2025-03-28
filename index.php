@@ -33,6 +33,52 @@ function excelDateToPHP($excelDate)
 function cleanExcelValue($value)
 {
     return preg_replace('/^="(.*)"$/', '$1', trim($value));
+    
+}
+function cleanAndNormalizeString($value) {
+    $value = preg_replace('/^="(.*)"$/', '$1', trim($value));
+
+    $value = strtolower($value);
+
+    $value = removeVietnameseAccents($value);
+
+    $value = str_replace(' ', '_', $value);
+
+    $value = preg_replace('/[^a-z0-9_]/', '', $value);
+
+    return $value;
+}
+
+function removeVietnameseAccents($str) {
+    $str = mb_strtolower($str, 'UTF-8');
+
+    $accentedChars = ['à', 'á', 'ạ', 'ả', 'ã', 'â', 'ầ', 'ấ', 'ậ', 'ẩ', 'ẫ', 'ă', 'ằ', 'ắ', 'ặ', 'ẳ', 'ẵ',
+                      'è', 'é', 'ẹ', 'ẻ', 'ẽ', 'ê', 'ề', 'ế', 'ệ', 'ể', 'ễ',
+                      'ì', 'í', 'ị', 'ỉ', 'ĩ',
+                      'ò', 'ó', 'ọ', 'ỏ', 'õ', 'ô', 'ồ', 'ố', 'ộ', 'ổ', 'ỗ', 'ơ', 'ờ', 'ớ', 'ợ', 'ở', 'ỡ',
+                      'ù', 'ú', 'ụ', 'ủ', 'ũ', 'ư', 'ừ', 'ứ', 'ự', 'ử', 'ữ',
+                      'ỳ', 'ý', 'ỵ', 'ỷ', 'ỹ', 'đ',
+                      'À', 'Á', 'Ạ', 'Ả', 'Ã', 'Â', 'Ầ', 'Ấ', 'Ậ', 'Ẩ', 'Ẫ', 'Ă', 'Ằ', 'Ắ', 'Ặ', 'Ẳ', 'Ẵ',
+                      'È', 'É', 'Ẹ', 'Ẻ', 'Ẽ', 'Ê', 'Ề', 'Ế', 'Ệ', 'Ể', 'Ễ',
+                      'Ì', 'Í', 'Ị', 'Ỉ', 'Ĩ',
+                      'Ò', 'Ó', 'Ọ', 'Ỏ', 'Õ', 'Ô', 'Ồ', 'Ố', 'Ộ', 'Ổ', 'Ỗ', 'Ơ', 'Ờ', 'Ớ', 'Ợ', 'Ở', 'Ỡ',
+                      'Ù', 'Ú', 'Ụ', 'Ủ', 'Ũ', 'Ư', 'Ừ', 'Ứ', 'Ự', 'Ử', 'Ữ',
+                      'Ỳ', 'Ý', 'Ỵ', 'Ỷ', 'Ỹ', 'Đ'];
+
+    $unaccentedChars = ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a',
+                         'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e',
+                         'i', 'i', 'i', 'i', 'i',
+                         'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o',
+                         'u', 'u', 'u', 'u', 'u', 'u', 'u', 'u', 'u', 'u', 'u',
+                         'y', 'y', 'y', 'y', 'y', 'd',
+                         'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a',
+                         'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e',
+                         'i', 'i', 'i', 'i', 'i',
+                         'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o',
+                         'u', 'u', 'u', 'u', 'u', 'u', 'u', 'u', 'u', 'u', 'u',
+                         'y', 'y', 'y', 'y', 'y', 'd'];
+
+    return strtr($str, array_combine($accentedChars, $unaccentedChars));
 }
 
 if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
@@ -49,16 +95,23 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
             $reader->setReadDataOnly(true);
             $spreadSheet = $reader->load($file);
             $sheet = $spreadSheet->getActiveSheet();
-
-
             $headerRow = null;
+            $headerCol = null;
+            $highestColumnIndex = Coordinate::columnIndexFromString($sheet->getHighestColumn());
+
             for ($row = 1; $row <= 5; $row++) {
-                $cellValue = cleanExcelValue($sheet->getCell("A$row")->getValue());
-                if (preg_match('/^(Mã E1|Ma_E1)$/i', $cellValue)) {
-                    $headerRow = $row;
-                    break;
+                for ($col = 1; $col <= $highestColumnIndex; $col++) {
+                    $colLetter = Coordinate::stringFromColumnIndex($col);
+                    $cellValue = cleanAndNormalizeString($sheet->getCell("$colLetter$row")->getValue());
+                
+                    if (preg_match('/^(ma_e1)$/i', $cellValue)) {
+                        $headerRow = $row;
+                        $headerCol = $col;
+                        break 2;
+                    }
                 }
             }
+
 
             if (!$headerRow) {
                 echo "<script>alert('Không tìm thấy tiêu đề Mã E1 trong file: " . $_FILES['excelFiles']['name'][$index] . "');</script>";
@@ -70,25 +123,24 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
 
             for ($col = 1; $col <= $highestColumnIndex; $col++) {
                 $colLetter = Coordinate::stringFromColumnIndex($col);
-                $colValue = cleanExcelValue($sheet->getCell("$colLetter$headerRow")->getValue());
-
-                if (preg_match('/^(Mã E1|Ma_E1)$/i', $colValue)) {
+                $colValue = cleanAndNormalizeString($sheet->getCell("$colLetter$headerRow")->getValue());
+                if (preg_match('/^(Mã E1|ma_e1)$/i', $colValue)) {
                     $columns['Ma_E1'] = $col;
                 } elseif (preg_match('/^(Ngày Đóng|Ngay_Phat_Hanh|Ngay_Dong)$/i', $colValue)) {
                     $columns['Ngay_Phat_Hanh'] = $col;
-                } elseif (preg_match('/^(Khối lượng|Khoi_Luong|KL_Tinh_Cuoc|Khối Lượng \(gam\))$/i', $colValue)) {
+                } elseif (preg_match('/^(Khối lượng|khoi_luong|KL_Tinh_Cuoc|Khối Lượng \(gam\))$/i', $colValue)) {
                     $columns['KL_Tinh_Cuoc'] = $col;
-                } elseif (preg_match('/^(Cuoc_E1|Cước E1|Cước E1 \(VNĐ\))$/i', $colValue)) {
+                } elseif (preg_match('/^(cuoc_e1|Cước E1|Cước E1 \(VNĐ\))$/i', $colValue)) {
                     $columns['Cuoc_Chinh'] = $col;
-                } elseif (preg_match('/^(Cước Chính|Cuoc_Chinh)$/i', $colValue) && !isset($columns['Cuoc_Chinh'])) {
+                } elseif (preg_match('/^(Cước Chính|cuoc_chinh)$/i', $colValue) && !isset($columns['Cuoc_Chinh'])) {
                     $columns['Cuoc_Chinh'] = $col;
-                } elseif (preg_match('/^(Nguoi_Nhan|Người Nhận)$/i', $colValue)) {
+                } elseif (preg_match('/^(nguoi_nhan|Người Nhận)$/i', $colValue)) {
                     $columns['Nguoi_Nhan'] = $col;
-                } elseif (preg_match('/^(DC_Nhan|DCNhan)$/i', $colValue)) {
+                } elseif (preg_match('/^(dc_nhan|DCNhan)$/i', $colValue)) {
                     $columns['DCNhan'] = $col;
-                } elseif (preg_match('/^(Dien_Thoai|Dien_Thoai_Nhan)$/i', $colValue)) {
+                } elseif (preg_match('/^(dien_thoai|Dien_Thoai_Nhan)$/i', $colValue)) {
                     $columns['Dien_Thoai'] = $col;
-                } elseif (preg_match('/^(So_Tham_Chieu)$/i', $colValue)) {
+                } elseif (preg_match('/^(so_tham_chieu|Số tham chiếu)$/i', $colValue)) {
                     $columns['So_Tham_Chieu'] = $col;
                 }
             }
