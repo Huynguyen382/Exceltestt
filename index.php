@@ -282,7 +282,11 @@ foreach ($params as $key => $value) {
 
 $totalRows = $stmt->execute()->fetchArray()[0];
 $totalPages = ceil($totalRows / $limit);
-$query = "SELECT * FROM ONESHIP $whereClause ORDER BY Ngay_Phat_Hanh DESC LIMIT $limit OFFSET $offset";
+$currentDate = date('Y-m-d');
+$query = "SELECT * FROM ONESHIP $whereClause ORDER BY 
+          CASE WHEN Ngay_Phat_Hanh <= '$currentDate' THEN 0 ELSE 1 END, 
+          Ngay_Phat_Hanh DESC 
+          LIMIT $limit OFFSET $offset";
 $stmt = $db->prepare($query);
 foreach ($params as $key => $value) {
     $stmt->bindValue($key, $value, SQLITE3_TEXT);
