@@ -67,7 +67,7 @@ if (isset($_POST['submit']) || isset($_POST['uploadEX'])) {
 
             if (!$headerRow) {
                 echo "<script>alert('File không hợp lệ: " . $_FILES['excelFiles']['name'][$index] . "');</script>";
-                continue;
+                continue;   
             }
 
             $columns = [];
@@ -285,7 +285,6 @@ $result = $stmt->execute();
             </form>
 
             <a href="index.php">Danh sách EMS</a>
-            <a href="vnpost.php">Danh sách VNPOST</a>
         </div>
 
 

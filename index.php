@@ -333,8 +333,6 @@ $result = $stmt->execute();
                 </div>
                 <button type="submit" name="submit" class="btn" onclick="return validateFileInput(event, 'fileInput2', 'tooltip2')">Upload và Xử lý COD</button>
             </form>
-
-            <a href="index.php">Danh sách EMS</a>
             <a href="vnpost.php">Danh sách VNPOST</a>
 
         </div>
